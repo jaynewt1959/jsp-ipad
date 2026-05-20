@@ -321,6 +321,25 @@ body {
 }
 .btn--restart:hover:not(:disabled) { background: #15803d; border-color: #15803d; }
 
+/* MIDI connect/disconnect toggle — full-width at sidebar top */
+.btn--midi-toggle {
+  width: 100%;
+  text-align: center;
+  font-weight: 600;
+  color: var(--accent);
+  border-color: var(--accent);
+  background: rgba(96,165,250,0.08);
+}
+.btn--midi-toggle:hover:not(:disabled) { background: rgba(96,165,250,0.16); }
+
+.btn.btn--midi-toggle--on {
+  background: #166534;
+  border-color: #16a34a;
+  color: #4ade80;
+  font-weight: 700;
+}
+.btn.btn--midi-toggle--on:hover:not(:disabled) { background: #15803d; }
+
 /* ===== Practice Style toggle (Free / Timed) ============================== */
 
 .sidebar__practice-style {

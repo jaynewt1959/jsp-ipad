@@ -28,32 +28,13 @@ export function Sidebar({ snapshot, connection, send, beatPhase, loopMode, onSet
 
   return (
     <aside className="sidebar">
-      <section className="sidebar__section">
-        <h2 className="sidebar__section-title">MIDI</h2>
-        <div className="sidebar__midi-row">
-          <span className={`sidebar__dot sidebar__dot--${midi?.running ? "on" : "off"}`} aria-hidden />
-          <span>{midi?.running ? "Running" : "Stopped"}</span>
-          <div className={`badge badge--${connection.kind} sidebar__conn-badge`}>
-            {connection.kind === "open"       && "connected"}
-            {connection.kind === "connecting" && "connecting…"}
-            {connection.kind === "closed"     && "disconnected"}
-          </div>
-        </div>
-        {midi && midi.sources.length > 0 && (
-          <ul className="sidebar__source-list">
-            {midi.sources.map((s) => (
-              <li key={s} title={s}>{s}</li>
-            ))}
-          </ul>
-        )}
-        <button
-          className={`btn ${midi?.running ? "btn--danger" : "btn--primary"}`}
-          onClick={() => send({ type: midi?.running ? "stopMidi" : "startLesson" })}
-          disabled={connection.kind !== "open"}
-        >
-          {midi?.running ? "Stop MIDI" : "Start MIDI"}
-        </button>
-      </section>
+      <button
+        className={`btn btn--midi-toggle ${midi?.running ? "btn--midi-toggle--on" : ""}`}
+        onClick={() => send({ type: midi?.running ? "stopMidi" : "startLesson" })}
+        disabled={connection.kind !== "open"}
+      >
+        {midi?.running ? "⬤ Disconnect MIDI" : "Connect MIDI"}
+      </button>
 
       <section className="sidebar__section">
         <h2 className="sidebar__section-title">Practice Style</h2>
