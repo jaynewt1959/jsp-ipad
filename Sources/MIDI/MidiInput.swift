@@ -20,7 +20,6 @@
 //    `msgObjectAdded`/`msgSetupChanged`.
 //
 import Foundation
-import JSPCore
 #if canImport(CoreMIDI)
 import CoreMIDI
 #endif

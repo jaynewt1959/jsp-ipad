@@ -13,7 +13,6 @@
 //      taps trigger.
 //
 import Foundation
-import JSPCore
 
 // MARK: - Server -> client
 

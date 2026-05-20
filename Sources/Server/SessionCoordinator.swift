@@ -13,7 +13,6 @@
 //  dedicated `Task` that hops back into the actor for each event.
 //
 import Foundation
-import JSPCore
 
 actor SessionCoordinator {
 
