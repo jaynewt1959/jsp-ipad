@@ -22,7 +22,7 @@
 import Foundation
 
 /// Public-facing snapshot of where the engine currently is.
-public enum LessonState: Equatable {
+public enum EngineState: Equatable {
     case idle                                   // no lesson loaded
     case awaiting(stepIndex: Int)               // mid-lesson
     case completed                              // user reached the end
@@ -65,7 +65,7 @@ public final class LessonEngine {
     /// Per-hand phase through the current step's press-release cycle.
     private var phase: [HandSide: HandPhase] = [.left: .pending, .right: .pending]
 
-    public var state: LessonState {
+    public var state: EngineState {
         guard let lesson else { return .idle }
         if currentStepIndex >= lesson.steps.count { return .completed }
         return .awaiting(stepIndex: currentStepIndex)
