@@ -34,7 +34,7 @@ struct ContentView: View {
     private func waitForServer() async {
         let healthURL = URL(string: "http://localhost:8089/healthz")!
         // Brief initial pause so the server has a head start before first poll.
-        try? await Task.sleep(nanoseconds: 500_000_000)
+        try? await Task.sleep(nanoseconds: 800_000_000)
         while true {
             if let (_, response) = try? await URLSession.shared.data(from: healthURL),
                (response as? HTTPURLResponse)?.statusCode == 200 {

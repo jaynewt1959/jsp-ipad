@@ -32,6 +32,18 @@ targets:
 
     info:
       path: JSPiPad/Info.plist
+      properties:
+        CFBundleDisplayName: JSP
+        LSRequiresIPhoneOS: true
+        UIRequiresFullScreen: true
+        UIDeviceFamily: [2]
+        "UISupportedInterfaceOrientations~ipad":
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
+        UILaunchScreen: {}
+        NSAppTransportSecurity:
+          NSAllowsLocalNetworking: true
+        NSMicrophoneUsageDescription: JSP uses CoreMIDI to receive notes from your USB MIDI keyboard.
 
     settings:
       base:
