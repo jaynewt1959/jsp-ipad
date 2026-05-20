@@ -41,12 +41,6 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: com.jamien.JSPiPad
         PRODUCT_NAME: JSPiPad
         ENABLE_HARDENED_RUNTIME: NO
-        # Full-screen app — satisfies both orientation + launch screen warnings
-        INFOPLIST_KEY_UIRequiresFullScreen: "YES"
-        INFOPLIST_KEY_UIApplicationSupportsMultipleScenes: "NO"
-        INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad: "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight"
-        # Auto-generate a blank launch screen (no storyboard file needed)
-        INFOPLIST_KEY_UILaunchScreen_Generation: "YES"
 
     sources:
       - path: JSPiPad
