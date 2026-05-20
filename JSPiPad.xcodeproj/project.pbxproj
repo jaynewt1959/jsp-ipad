@@ -135,6 +135,7 @@
 				A1E2E77D2C1FD2A5B92F9246 /* Build Web UI */,
 				B78A76BBE7536D2AB5C2D9B2 /* Sources */,
 				FADF6199895832F5EC86851C /* Frameworks */,
+				DF84594AB26C701D0A35544C /* Copy Web UI to Bundle */,
 			);
 			buildRules = (
 			);
@@ -205,6 +206,26 @@
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
 			shellScript = "set -e\ncd \"$SRCROOT/web\"\nnpm install --silent\nnpm run build\n";
+		};
+		DF84594AB26C701D0A35544C /* Copy Web UI to Bundle */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"$(SRCROOT)/web/dist/index.html",
+			);
+			name = "Copy Web UI to Bundle";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"$(BUILT_PRODUCTS_DIR)/$(CONTENTS_FOLDER_PATH)/dist/index.html",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "set -e\nDEST=\"$BUILT_PRODUCTS_DIR/$CONTENTS_FOLDER_PATH/dist\"\nrm -rf \"$DEST\"\ncp -r \"$SRCROOT/web/dist\" \"$DEST\"\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 

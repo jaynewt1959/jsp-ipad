@@ -54,10 +54,6 @@ targets:
       - path: Sources/Server
       - path: Sources/MIDI
 
-    resources:
-      - path: web/dist
-        type: folder
-
     dependencies:
       - package: hummingbird
         product: Hummingbird
@@ -77,3 +73,15 @@ targets:
           - $(SRCROOT)/web/vite.config.ts
         outputFiles:
           - $(SRCROOT)/web/dist/index.html
+
+    postBuildScripts:
+      - name: "Copy Web UI to Bundle"
+        script: |
+          set -e
+          DEST="$BUILT_PRODUCTS_DIR/$CONTENTS_FOLDER_PATH/dist"
+          rm -rf "$DEST"
+          cp -r "$SRCROOT/web/dist" "$DEST"
+        inputFiles:
+          - $(SRCROOT)/web/dist/index.html
+        outputFiles:
+          - $(BUILT_PRODUCTS_DIR)/$(CONTENTS_FOLDER_PATH)/dist/index.html
