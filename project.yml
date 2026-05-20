@@ -40,6 +40,7 @@ targets:
           - UIInterfaceOrientationLandscapeLeft
           - UIInterfaceOrientationLandscapeRight
         UILaunchScreen: {}
+        UIUserInterfaceStyle: Dark
         NSAppTransportSecurity:
           NSAllowsLocalNetworking: true
         NSMicrophoneUsageDescription: JSP uses CoreMIDI to receive notes from your USB MIDI keyboard.
@@ -52,12 +53,16 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: com.jamien.JSPiPad
         PRODUCT_NAME: JSPiPad
         ENABLE_HARDENED_RUNTIME: NO
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
 
     sources:
       - path: JSPiPad
       - path: Sources/Lesson
       - path: Sources/Server
       - path: Sources/MIDI
+
+    resources:
+      - path: Assets.xcassets
 
     dependencies:
       - package: hummingbird

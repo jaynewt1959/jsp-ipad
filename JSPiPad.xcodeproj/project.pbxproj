@@ -31,7 +31,7 @@
 		10DCCAB35F6A79631DD2E04B /* SessionCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionCoordinator.swift; sourceTree = "<group>"; };
 		24AE5917ADF6270330108F56 /* HTTPServer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HTTPServer.swift; sourceTree = "<group>"; };
 		351541C349ED1B571170521C /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
-		374E26EC95281195F5AE38EC /* JSPiPad.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = JSPiPad.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		374E26EC95281195F5AE38EC /* JSPiPad.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = JSPiPad.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		37BCB24FE78ABDA5C06BB96B /* Wire.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Wire.swift; sourceTree = "<group>"; };
 		6C50396CFBEE5752B8322C17 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		7D5E76D73C4501ABA05F9F20 /* EventLog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventLog.swift; sourceTree = "<group>"; };
@@ -158,6 +158,8 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = YES;
 				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+				};
 			};
 			buildConfigurationList = 396A669D40F465331FF10C9F /* Build configuration list for PBXProject "JSPiPad" */;
 			developmentRegion = en;
@@ -258,7 +260,6 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
-				DEVELOPMENT_TEAM = 2U6V9ARN9F;
 				ENABLE_HARDENED_RUNTIME = NO;
 				INFOPLIST_FILE = JSPiPad/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
@@ -398,7 +399,6 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
-				DEVELOPMENT_TEAM = 2U6V9ARN9F;
 				ENABLE_HARDENED_RUNTIME = NO;
 				INFOPLIST_FILE = JSPiPad/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;

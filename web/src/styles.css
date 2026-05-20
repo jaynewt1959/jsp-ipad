@@ -59,7 +59,7 @@ body {
 .sidebar {
   background: var(--bg-soft);
   border-right: 1px solid var(--line);
-  padding: 16px 16px;
+  padding: calc(16px + env(safe-area-inset-top)) 16px 16px;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
@@ -397,7 +397,7 @@ body {
 /* ===== Practice main panel =============================================== */
 
 .practice {
-  padding: 24px;
+  padding: calc(24px + env(safe-area-inset-top)) 24px 24px;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
