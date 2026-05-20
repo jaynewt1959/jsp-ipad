@@ -1,0 +1,452 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		0B71B4A55644108D2E00051C /* Wire.swift in Sources */ = {isa = PBXBuildFile; fileRef = 37BCB24FE78ABDA5C06BB96B /* Wire.swift */; };
+		1A46DA298047A9346FC4F819 /* HummingbirdWebSocket in Frameworks */ = {isa = PBXBuildFile; productRef = 4189556126D5EFF89BC06DC8 /* HummingbirdWebSocket */; };
+		2116E215FB63A2157B925300 /* StaticFiles.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB1B8148BB21F4A3AC49A962 /* StaticFiles.swift */; };
+		28F06D701C09A8C863575FF6 /* SessionCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10DCCAB35F6A79631DD2E04B /* SessionCoordinator.swift */; };
+		3475121D9181BE3D2543C847 /* HTTPServer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 24AE5917ADF6270330108F56 /* HTTPServer.swift */; };
+		537159903A2829E8C822DA07 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = 351541C349ED1B571170521C /* Models.swift */; };
+		6A26CCDC7DA404883DFCBE10 /* MidiInput.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA9AEE186427A5ACC428E67C /* MidiInput.swift */; };
+		77FA17F98B1515F714E8BEFC /* Hummingbird in Frameworks */ = {isa = PBXBuildFile; productRef = 4E3C93CF78C206FA797E34C0 /* Hummingbird */; };
+		820E8276AC5DF44221A02109 /* SyncMetrics.swift in Sources */ = {isa = PBXBuildFile; fileRef = D7302CD830C300A49C782615 /* SyncMetrics.swift */; };
+		8B09BD000B91465ADE29EB0C /* WebSocketHub.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA088B6851F59FEAF1FF3583 /* WebSocketHub.swift */; };
+		9A4651580EF84E0EC6C08D6D /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A807DBFCD48DD4C1B95E1A9B /* ContentView.swift */; };
+		A73FC670884A595C5603C193 /* JSPiPadApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A21133D56BD1AB0D8BB8D88 /* JSPiPadApp.swift */; };
+		AEB9181FA86A8844AF7D6136 /* ScaleLibrary.swift in Sources */ = {isa = PBXBuildFile; fileRef = E8410E7C4E510747C5DE8DF9 /* ScaleLibrary.swift */; };
+		C77B289C06DF180C34260274 /* CMajor.swift in Sources */ = {isa = PBXBuildFile; fileRef = C6620CEA275FF7C35A47FFC4 /* CMajor.swift */; };
+		CB6369A1926A166CACB31088 /* LessonEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEEE568165E3B8B6E037073B /* LessonEngine.swift */; };
+		D85189153877237D6FF4CF33 /* EventLog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D5E76D73C4501ABA05F9F20 /* EventLog.swift */; };
+		F3BAB8F84EEB8033DD391CA9 /* EngineHost.swift in Sources */ = {isa = PBXBuildFile; fileRef = 086DEF4A68C708DF7B211420 /* EngineHost.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		086DEF4A68C708DF7B211420 /* EngineHost.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EngineHost.swift; sourceTree = "<group>"; };
+		10DCCAB35F6A79631DD2E04B /* SessionCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionCoordinator.swift; sourceTree = "<group>"; };
+		24AE5917ADF6270330108F56 /* HTTPServer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HTTPServer.swift; sourceTree = "<group>"; };
+		351541C349ED1B571170521C /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
+		374E26EC95281195F5AE38EC /* JSPiPad.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = JSPiPad.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		37BCB24FE78ABDA5C06BB96B /* Wire.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Wire.swift; sourceTree = "<group>"; };
+		6C50396CFBEE5752B8322C17 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		7D5E76D73C4501ABA05F9F20 /* EventLog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventLog.swift; sourceTree = "<group>"; };
+		9A21133D56BD1AB0D8BB8D88 /* JSPiPadApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JSPiPadApp.swift; sourceTree = "<group>"; };
+		A807DBFCD48DD4C1B95E1A9B /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		BB1B8148BB21F4A3AC49A962 /* StaticFiles.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StaticFiles.swift; sourceTree = "<group>"; };
+		C6620CEA275FF7C35A47FFC4 /* CMajor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CMajor.swift; sourceTree = "<group>"; };
+		CEEE568165E3B8B6E037073B /* LessonEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LessonEngine.swift; sourceTree = "<group>"; };
+		D7302CD830C300A49C782615 /* SyncMetrics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyncMetrics.swift; sourceTree = "<group>"; };
+		E8410E7C4E510747C5DE8DF9 /* ScaleLibrary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScaleLibrary.swift; sourceTree = "<group>"; };
+		EA088B6851F59FEAF1FF3583 /* WebSocketHub.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebSocketHub.swift; sourceTree = "<group>"; };
+		FA9AEE186427A5ACC428E67C /* MidiInput.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MidiInput.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		FADF6199895832F5EC86851C /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				77FA17F98B1515F714E8BEFC /* Hummingbird in Frameworks */,
+				1A46DA298047A9346FC4F819 /* HummingbirdWebSocket in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		098FA6B1EB14C687FD7DD960 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				374E26EC95281195F5AE38EC /* JSPiPad.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		26B84D209F95DC8C716D54D5 /* Server */ = {
+			isa = PBXGroup;
+			children = (
+				7D5E76D73C4501ABA05F9F20 /* EventLog.swift */,
+				24AE5917ADF6270330108F56 /* HTTPServer.swift */,
+				10DCCAB35F6A79631DD2E04B /* SessionCoordinator.swift */,
+				BB1B8148BB21F4A3AC49A962 /* StaticFiles.swift */,
+				EA088B6851F59FEAF1FF3583 /* WebSocketHub.swift */,
+				37BCB24FE78ABDA5C06BB96B /* Wire.swift */,
+			);
+			name = Server;
+			path = Sources/Server;
+			sourceTree = "<group>";
+		};
+		3600C8FF8B13699522BB048B /* MIDI */ = {
+			isa = PBXGroup;
+			children = (
+				FA9AEE186427A5ACC428E67C /* MidiInput.swift */,
+			);
+			name = MIDI;
+			path = Sources/MIDI;
+			sourceTree = "<group>";
+		};
+		37B2E55AB5EB8CF5F6D6155F /* Lesson */ = {
+			isa = PBXGroup;
+			children = (
+				C6620CEA275FF7C35A47FFC4 /* CMajor.swift */,
+				CEEE568165E3B8B6E037073B /* LessonEngine.swift */,
+				351541C349ED1B571170521C /* Models.swift */,
+				E8410E7C4E510747C5DE8DF9 /* ScaleLibrary.swift */,
+				D7302CD830C300A49C782615 /* SyncMetrics.swift */,
+			);
+			name = Lesson;
+			path = Sources/Lesson;
+			sourceTree = "<group>";
+		};
+		7B07F9451E4D9497B6F4C38D = {
+			isa = PBXGroup;
+			children = (
+				AD5FAB779B7B9000ECF569EC /* JSPiPad */,
+				37B2E55AB5EB8CF5F6D6155F /* Lesson */,
+				3600C8FF8B13699522BB048B /* MIDI */,
+				26B84D209F95DC8C716D54D5 /* Server */,
+				098FA6B1EB14C687FD7DD960 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		AD5FAB779B7B9000ECF569EC /* JSPiPad */ = {
+			isa = PBXGroup;
+			children = (
+				A807DBFCD48DD4C1B95E1A9B /* ContentView.swift */,
+				086DEF4A68C708DF7B211420 /* EngineHost.swift */,
+				6C50396CFBEE5752B8322C17 /* Info.plist */,
+				9A21133D56BD1AB0D8BB8D88 /* JSPiPadApp.swift */,
+			);
+			path = JSPiPad;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		B4DA729BDF9B9DF711B38873 /* JSPiPad */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 9490E655DCEC1514A68FEC08 /* Build configuration list for PBXNativeTarget "JSPiPad" */;
+			buildPhases = (
+				A1E2E77D2C1FD2A5B92F9246 /* Build Web UI */,
+				B78A76BBE7536D2AB5C2D9B2 /* Sources */,
+				FADF6199895832F5EC86851C /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = JSPiPad;
+			packageProductDependencies = (
+				4E3C93CF78C206FA797E34C0 /* Hummingbird */,
+				4189556126D5EFF89BC06DC8 /* HummingbirdWebSocket */,
+			);
+			productName = JSPiPad;
+			productReference = 374E26EC95281195F5AE38EC /* JSPiPad.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		52BF3DEFADF8BEA823573CFF /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+				};
+			};
+			buildConfigurationList = 396A669D40F465331FF10C9F /* Build configuration list for PBXProject "JSPiPad" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = 7B07F9451E4D9497B6F4C38D;
+			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				1982282868324358C5E15E9C /* XCRemoteSwiftPackageReference "hummingbird" */,
+				FB8D7C358B449B7207CD2FB8 /* XCRemoteSwiftPackageReference "hummingbird-websocket" */,
+			);
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 098FA6B1EB14C687FD7DD960 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				B4DA729BDF9B9DF711B38873 /* JSPiPad */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		A1E2E77D2C1FD2A5B92F9246 /* Build Web UI */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"$(SRCROOT)/web/src",
+				"$(SRCROOT)/web/package.json",
+				"$(SRCROOT)/web/vite.config.ts",
+			);
+			name = "Build Web UI";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"$(SRCROOT)/web/dist/index.html",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "set -e\ncd \"$SRCROOT/web\"\nnpm install --silent\nnpm run build\n";
+		};
+/* End PBXShellScriptBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		B78A76BBE7536D2AB5C2D9B2 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				C77B289C06DF180C34260274 /* CMajor.swift in Sources */,
+				9A4651580EF84E0EC6C08D6D /* ContentView.swift in Sources */,
+				F3BAB8F84EEB8033DD391CA9 /* EngineHost.swift in Sources */,
+				D85189153877237D6FF4CF33 /* EventLog.swift in Sources */,
+				3475121D9181BE3D2543C847 /* HTTPServer.swift in Sources */,
+				A73FC670884A595C5603C193 /* JSPiPadApp.swift in Sources */,
+				CB6369A1926A166CACB31088 /* LessonEngine.swift in Sources */,
+				6A26CCDC7DA404883DFCBE10 /* MidiInput.swift in Sources */,
+				537159903A2829E8C822DA07 /* Models.swift in Sources */,
+				AEB9181FA86A8844AF7D6136 /* ScaleLibrary.swift in Sources */,
+				28F06D701C09A8C863575FF6 /* SessionCoordinator.swift in Sources */,
+				2116E215FB63A2157B925300 /* StaticFiles.swift in Sources */,
+				820E8276AC5DF44221A02109 /* SyncMetrics.swift in Sources */,
+				8B09BD000B91465ADE29EB0C /* WebSocketHub.swift in Sources */,
+				0B71B4A55644108D2E00051C /* Wire.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		3CF03749EB9E17F0FF18AAE5 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				ENABLE_HARDENED_RUNTIME = NO;
+				INFOPLIST_FILE = JSPiPad/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.jamien.JSPiPad;
+				PRODUCT_NAME = JSPiPad;
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 5.10;
+				TARGETED_DEVICE_FAMILY = 2;
+			};
+			name = Debug;
+		};
+		8971D4F8C718A4A5F879775D /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		BDDA4ECB38F06D69F6B24375 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		CEB28A092A3214922740864E /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				ENABLE_HARDENED_RUNTIME = NO;
+				INFOPLIST_FILE = JSPiPad/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.jamien.JSPiPad;
+				PRODUCT_NAME = JSPiPad;
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 5.10;
+				TARGETED_DEVICE_FAMILY = 2;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		396A669D40F465331FF10C9F /* Build configuration list for PBXProject "JSPiPad" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				8971D4F8C718A4A5F879775D /* Debug */,
+				BDDA4ECB38F06D69F6B24375 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		9490E655DCEC1514A68FEC08 /* Build configuration list for PBXNativeTarget "JSPiPad" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				3CF03749EB9E17F0FF18AAE5 /* Debug */,
+				CEB28A092A3214922740864E /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		1982282868324358C5E15E9C /* XCRemoteSwiftPackageReference "hummingbird" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/hummingbird-project/hummingbird.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.0.0;
+			};
+		};
+		FB8D7C358B449B7207CD2FB8 /* XCRemoteSwiftPackageReference "hummingbird-websocket" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/hummingbird-project/hummingbird-websocket.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.0.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		4189556126D5EFF89BC06DC8 /* HummingbirdWebSocket */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = FB8D7C358B449B7207CD2FB8 /* XCRemoteSwiftPackageReference "hummingbird-websocket" */;
+			productName = HummingbirdWebSocket;
+		};
+		4E3C93CF78C206FA797E34C0 /* Hummingbird */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 1982282868324358C5E15E9C /* XCRemoteSwiftPackageReference "hummingbird" */;
+			productName = Hummingbird;
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = 52BF3DEFADF8BEA823573CFF /* Project object */;
+}

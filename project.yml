@@ -1,0 +1,63 @@
+name: JSPiPad
+
+options:
+  bundleIdPrefix: com.jamien
+  deploymentTarget:
+    iOS: "17.0"
+  defaultConfig: Debug
+
+packages:
+  hummingbird:
+    url: https://github.com/hummingbird-project/hummingbird.git
+    from: "2.0.0"
+  hummingbird-websocket:
+    url: https://github.com/hummingbird-project/hummingbird-websocket.git
+    from: "2.0.0"
+
+targets:
+  JSPiPad:
+    type: application
+    platform: iOS
+    deploymentTarget: "17.0"
+
+    info:
+      path: JSPiPad/Info.plist
+
+    settings:
+      base:
+        SWIFT_VERSION: "5.10"
+        TARGETED_DEVICE_FAMILY: "2"          # iPad only
+        IPHONEOS_DEPLOYMENT_TARGET: "17.0"
+        PRODUCT_BUNDLE_IDENTIFIER: com.jamien.JSPiPad
+        PRODUCT_NAME: JSPiPad
+        ENABLE_HARDENED_RUNTIME: NO
+
+    sources:
+      - path: JSPiPad
+      - path: Sources/Lesson
+      - path: Sources/Server
+      - path: Sources/MIDI
+
+    resources:
+      - path: web/dist
+        type: folder
+
+    dependencies:
+      - package: hummingbird
+        product: Hummingbird
+      - package: hummingbird-websocket
+        product: HummingbirdWebSocket
+
+    preBuildScripts:
+      - name: "Build Web UI"
+        script: |
+          set -e
+          cd "$SRCROOT/web"
+          npm install --silent
+          npm run build
+        inputFiles:
+          - $(SRCROOT)/web/src
+          - $(SRCROOT)/web/package.json
+          - $(SRCROOT)/web/vite.config.ts
+        outputFiles:
+          - $(SRCROOT)/web/dist/index.html

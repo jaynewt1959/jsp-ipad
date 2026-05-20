@@ -1,0 +1,10 @@
+.DS_Store
+web/node_modules/
+web/dist/
+*.xcuserstate
+xcuserdata/
+.build/
+DerivedData/
+*.resolved
+built
+build/
