@@ -81,7 +81,16 @@ actor EngineHost {
         }
 
         // Locate web/dist inside the app bundle.
-        let staticDir = Bundle.main.resourcePath.map { $0 + "/dist" }
+        // Falls back to nil (no static serving) if the folder is absent,
+        // so the server still starts and WebSocket works.
+        let distPath = Bundle.main.resourcePath.map { $0 + "/dist" }
+        let staticDir: String? = distPath.flatMap { path in
+            FileManager.default.fileExists(atPath: path) ? path : nil
+        }
+        if staticDir == nil {
+            NSLog("EngineHost: web/dist not found in bundle — UI will not load. " +
+                  "Run npm run build in the web/ folder and rebuild.")
+        }
 
         let config = ServerConfig(port: port, staticDir: staticDir, devMode: false)
 
