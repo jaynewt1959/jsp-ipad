@@ -81,16 +81,30 @@ actor EngineHost {
         }
 
         // Locate web/dist inside the app bundle.
-        // Falls back to nil (no static serving) if the folder is absent,
-        // so the server still starts and WebSocket works.
-        let distPath = Bundle.main.resourcePath.map { $0 + "/dist" }
-        let staticDir: String? = distPath.flatMap { path in
-            FileManager.default.fileExists(atPath: path) ? path : nil
-        }
-        if staticDir == nil {
-            NSLog("EngineHost: web/dist not found in bundle — UI will not load. " +
-                  "Run npm run build in the web/ folder and rebuild.")
-        }
+        // Use Bundle URL API first (handles iOS path quirks), fall back
+        // to direct path concatenation. Log bundle contents on failure.
+        let staticDir: String? = {
+            // Primary: Bundle resource lookup for index.html inside dist/
+            if let indexURL = Bundle.main.url(forResource: "index",
+                                              withExtension: "html",
+                                              subdirectory: "dist") {
+                return indexURL.deletingLastPathComponent().path
+            }
+            // Fallback: direct path
+            if let base = Bundle.main.resourcePath {
+                let candidate = base + "/dist"
+                if FileManager.default.fileExists(atPath: candidate) {
+                    return candidate
+                }
+            }
+            // Debug: list bundle top-level to diagnose missing dist
+            if let base = Bundle.main.resourcePath,
+               let items = try? FileManager.default.contentsOfDirectory(atPath: base) {
+                NSLog("EngineHost: bundle contents: %@", items.joined(separator: ", "))
+            }
+            NSLog("EngineHost: web/dist not found — UI will not load")
+            return nil
+        }()
 
         let config = ServerConfig(port: port, staticDir: staticDir, devMode: false)
 
