@@ -29,10 +29,6 @@
 	</dict>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>JSP uses CoreMIDI to receive notes from your USB MIDI keyboard.</string>
-	<key>UIDeviceFamily</key>
-	<array>
-		<integer>2</integer>
-	</array>
 	<key>UILaunchScreen</key>
 	<dict/>
 	<key>UIRequiresFullScreen</key>
