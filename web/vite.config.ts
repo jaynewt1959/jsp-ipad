@@ -16,6 +16,9 @@ import react from "@vitejs/plugin-react";
 // reach `http://<mac-hostname>.local:5173` for live reload.
 export default defineConfig({
   plugins: [react()],
+  define: {
+    __BUILD_TIME__: JSON.stringify(new Date().toISOString().slice(0, 16).replace("T", " "))
+  },
   server: {
     host: true,
     port: 5173,

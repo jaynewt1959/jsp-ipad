@@ -1,4 +1,5 @@
 .DS_Store
+JSPiPad/BuildTimestamp.swift
 web/node_modules/
 *.xcuserstate
 xcuserdata/

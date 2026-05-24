@@ -49,7 +49,9 @@ struct ContentView: View {
 struct WebViewContainer: UIViewRepresentable {
 
     func makeUIView(context: Context) -> WKWebView {
-        let webView = WKWebView()
+        let config = WKWebViewConfiguration()
+        config.websiteDataStore = WKWebsiteDataStore.nonPersistent()
+        let webView = WKWebView(frame: .zero, configuration: config)
         webView.backgroundColor = .black
         webView.isOpaque = false
         webView.load(URLRequest(url: URL(string: "http://localhost:8089/")!))

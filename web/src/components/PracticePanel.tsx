@@ -12,11 +12,12 @@ interface Props {
   timingStats: TimingStats;
   loopMode: boolean;
   loopCountdown: number | null;
+  lastCmd: string | null;
 }
 
 // Keyboard range is computed dynamically from the active scale (see below).
 
-export function PracticePanel({ snapshot, timing, timingStats, loopMode, loopCountdown }: Props) {
+export function PracticePanel({ snapshot, timing, timingStats, loopMode, loopCountdown, lastCmd }: Props) {
   const lesson = snapshot?.lesson;
   const step = snapshot?.lesson.currentStep ?? null;
   const handStatus = snapshot?.handStatus;
@@ -115,6 +116,10 @@ export function PracticePanel({ snapshot, timing, timingStats, loopMode, loopCou
 
   return (
     <main className="practice">
+      <div style={{ fontSize: "11px", color: "#666", padding: "2px 8px", display: "flex", justifyContent: "space-between" }}>
+        <span>Build: {__BUILD_TIME__}</span>
+        <span>{lastCmd ? `last cmd: ${lastCmd}` : "no cmd yet"}</span>
+      </div>
       <header className="practice__header">
         <h1 className="practice__step">{stepLabel}</h1>
         <div className="practice__progress" aria-hidden>

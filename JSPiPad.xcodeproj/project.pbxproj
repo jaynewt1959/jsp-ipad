@@ -191,19 +191,15 @@
 			inputFileListPaths = (
 			);
 			inputPaths = (
-				"$(SRCROOT)/web/src",
-				"$(SRCROOT)/web/package.json",
-				"$(SRCROOT)/web/vite.config.ts",
 			);
 			name = "Build Web UI";
 			outputFileListPaths = (
 			);
 			outputPaths = (
-				"$(SRCROOT)/web/dist/index.html",
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "set -e\ncd \"$SRCROOT/web\"\nnpm install --silent\nnpm run build\n";
+			shellScript = "set -e\necho \"// Auto-generated — do not edit\" > \"$SRCROOT/JSPiPad/BuildTimestamp.swift\"\necho \"let BUILD_TIMESTAMP = \\\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\\\"\" >> \"$SRCROOT/JSPiPad/BuildTimestamp.swift\"\ncd \"$SRCROOT/web\"\nnpm install --silent\nnpm run build\n";
 		};
 		DF84594AB26C701D0A35544C /* Copy Web UI to Bundle */ = {
 			isa = PBXShellScriptBuildPhase;
@@ -213,13 +209,11 @@
 			inputFileListPaths = (
 			);
 			inputPaths = (
-				"$(SRCROOT)/web/dist/index.html",
 			);
 			name = "Copy Web UI to Bundle";
 			outputFileListPaths = (
 			);
 			outputPaths = (
-				"$(BUILT_PRODUCTS_DIR)/$(CONTENTS_FOLDER_PATH)/dist/index.html",
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;

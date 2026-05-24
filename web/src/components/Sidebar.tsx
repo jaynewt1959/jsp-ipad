@@ -181,14 +181,14 @@ export function Sidebar({ snapshot, connection, send, beatPhase, loopMode, onSet
           <div className="sidebar__practice-style">
             <button
               className={`btn btn--style ${!loopMode ? "btn--style-active" : ""}`}
-              onClick={() => onSetLoopMode(false)}
+              onClick={() => { onSetLoopMode(false); send({ type: "restartLesson" }); }}
               disabled={connection.kind !== "open"}
             >
               Once
             </button>
             <button
               className={`btn btn--style ${loopMode ? "btn--style-active" : ""}`}
-              onClick={() => onSetLoopMode(true)}
+              onClick={() => { onSetLoopMode(true); send({ type: "restartLesson" }); }}
               disabled={connection.kind !== "open"}
             >
               ⟳ Loop

@@ -7,7 +7,12 @@ import { PracticePanel } from "./components/PracticePanel";
 import { DebugPanel } from "./components/DebugPanel";
 
 export default function App() {
-  const { snapshot, status, send, debugLog, clearDebugLog } = useSession();
+  const { snapshot, status, send: rawSend, debugLog, clearDebugLog } = useSession();
+  const [lastCmd, setLastCmd] = useState<string | null>(null);
+  const send = (cmd: Parameters<typeof rawSend>[0]) => {
+    setLastCmd(cmd.type);
+    rawSend(cmd);
+  };
 
   // ── Toast notification ─────────────────────────────────────────────────
   const [toast, setToast] = useState<string | null>(null);
@@ -72,7 +77,7 @@ export default function App() {
         onSetLoopMode={setLoopMode}
         onReset={handleReset}
       />
-      <PracticePanel snapshot={snapshot} timing={timing} timingStats={timingStats} loopMode={loopMode} loopCountdown={loopCountdown} />
+      <PracticePanel snapshot={snapshot} timing={timing} timingStats={timingStats} loopMode={loopMode} loopCountdown={loopCountdown} lastCmd={lastCmd} />
       {debugLog && (
         <DebugPanel log={debugLog} onClose={clearDebugLog} />
       )}

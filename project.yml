@@ -74,15 +74,11 @@ targets:
       - name: "Build Web UI"
         script: |
           set -e
+          echo "// Auto-generated — do not edit" > "$SRCROOT/JSPiPad/BuildTimestamp.swift"
+          echo "let BUILD_TIMESTAMP = \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"" >> "$SRCROOT/JSPiPad/BuildTimestamp.swift"
           cd "$SRCROOT/web"
           npm install --silent
           npm run build
-        inputFiles:
-          - $(SRCROOT)/web/src
-          - $(SRCROOT)/web/package.json
-          - $(SRCROOT)/web/vite.config.ts
-        outputFiles:
-          - $(SRCROOT)/web/dist/index.html
 
     postBuildScripts:
       - name: "Copy Web UI to Bundle"
@@ -91,7 +87,3 @@ targets:
           DEST="$BUILT_PRODUCTS_DIR/$CONTENTS_FOLDER_PATH/dist"
           rm -rf "$DEST"
           cp -r "$SRCROOT/web/dist" "$DEST"
-        inputFiles:
-          - $(SRCROOT)/web/dist/index.html
-        outputFiles:
-          - $(BUILT_PRODUCTS_DIR)/$(CONTENTS_FOLDER_PATH)/dist/index.html
