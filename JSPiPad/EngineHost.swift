@@ -29,7 +29,11 @@ actor EngineHost {
         webSocketRouter.ws("/ws") { inbound, outbound, _ in
             let id = UUID()
             var continuation: AsyncStream<String>.Continuation!
-            let outbox = AsyncStream<String> { c in continuation = c }
+            // .bufferingNewest(1): when the write task is busy, incoming
+            // snapshots replace the pending one rather than queuing behind
+            // it. The display always jumps to the current state rather than
+            // replaying a backlog of stale intermediate snapshots.
+            let outbox = AsyncStream<String>(bufferingPolicy: .bufferingNewest(1)) { c in continuation = c }
             await hub.register(WebSocketSubscription(id: id, outbox: continuation))
             defer { Task { await hub.unregister(id: id) } }
 
