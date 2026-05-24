@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useSession } from "./hooks/useSession";
 import { useMetronome } from "./hooks/useMetronome";
 import { useTiming } from "./hooks/useTiming";
@@ -9,10 +9,10 @@ import { DebugPanel } from "./components/DebugPanel";
 export default function App() {
   const { snapshot, status, send: rawSend, debugLog, clearDebugLog } = useSession();
   const [lastCmd, setLastCmd] = useState<string | null>(null);
-  const send = (cmd: Parameters<typeof rawSend>[0]) => {
+  const send = useCallback((cmd: Parameters<typeof rawSend>[0]) => {
     setLastCmd(cmd.type);
     rawSend(cmd);
-  };
+  }, [rawSend]);
 
   // ── Toast notification ─────────────────────────────────────────────────
   const [toast, setToast] = useState<string | null>(null);
