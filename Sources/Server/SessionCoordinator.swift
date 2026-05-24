@@ -528,10 +528,24 @@ actor SessionCoordinator {
         return sqrt(variance) / mean * 100
     }
 
+    /// True when the active key uses flat spellings (F major, Bb major, etc.).
+    private var useFlats: Bool {
+        switch currentKey {
+        case .fMajor, .bbMajor, .ebMajor, .abMajor,
+             .dNaturalMinor, .gNaturalMinor, .cNaturalMinor,
+             .fNaturalMinor, .bbNaturalMinor, .ebNaturalMinor, .abNaturalMinor:
+            return true
+        default:
+            return false
+        }
+    }
+
     private func noteName(_ midi: Int) -> String {
-        let names = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"]
+        let sharps = ["C", "C\u{266F}", "D", "D\u{266F}", "E", "F", "F\u{266F}", "G", "G\u{266F}", "A", "A\u{266F}", "B"]
+        let flats  = ["C", "D\u{266D}", "D", "E\u{266D}", "E", "F", "G\u{266D}", "G", "A\u{266D}", "A", "B\u{266D}", "B"]
+        let names  = useFlats ? flats : sharps
         let octave = (midi / 12) - 1
-        let pitch = names[((midi % 12) + 12) % 12]
+        let pitch  = names[((midi % 12) + 12) % 12]
         return "\(pitch)\(octave)"
     }
 }

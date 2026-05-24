@@ -99,7 +99,7 @@ export function PracticePanel({ snapshot, timing, timingStats, loopMode, loopCou
     const worstNote = worstStep != null ? (() => {
       const rh = scaleDesc.rhMidi[worstStep];
       const lh = scaleDesc.lhMidi[worstStep];
-      return rh != null && lh != null ? `${noteName(rh)}+${noteName(lh)}` : null;
+      return rh != null && lh != null ? `${noteName(rh, useFlats)}+${noteName(lh, useFlats)}` : null;
     })() : null;
     const parts = [
       timeStr && `${timeStr}`,
