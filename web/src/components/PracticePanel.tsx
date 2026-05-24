@@ -109,7 +109,7 @@ export function PracticePanel({ snapshot, timing, timingStats, loopMode, loopCou
       syncMs  != null ? `sync avg ±${Math.round(syncMs)}ms` : null,
       minSync != null ? `best ${Math.round(minSync)}ms` : null,
       maxSync != null ? `worst ${Math.round(maxSync)}ms${worstNote ? ` (${worstNote})` : ""}` : null,
-      lesson.velocityCV != null ? `evenness ${(100 - Math.min(lesson.velocityCV, 100)).toFixed(0)}%` : null,
+      lesson.velocityCV != null ? `fluidity ${(100 - Math.min(lesson.velocityCV, 100)).toFixed(0)}%` : null,
     ].filter(Boolean).join(" \u00b7 ");
     return `✓ Complete${parts ? ` — ${parts}` : ""}${loopMode ? " · next run starting…" : " · press Reset to begin again"}`;
   })() : null;
