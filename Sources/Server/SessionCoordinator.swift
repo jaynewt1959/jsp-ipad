@@ -234,6 +234,16 @@ actor SessionCoordinator {
         ))
 
         guard !results.isEmpty else { return }
+
+        // Skip broadcasting for events whose only results are alreadySatisfied.
+        // These change nothing visible (no step advance, no status change, no score
+        // highlight update) but would compete for the bufferingNewest(1) WS write
+        // slot, potentially dropping the important step-advance snapshot that follows.
+        let isAllAlreadySatisfied = results.allSatisfy {
+            if case .alreadySatisfied = $0 { return true } else { return false }
+        }
+        if isAllAlreadySatisfied { return }
+
         let eventTimestampMs = event.timestampNs > 0
             ? Int64(event.timestampNs / 1_000_000)
             : nil

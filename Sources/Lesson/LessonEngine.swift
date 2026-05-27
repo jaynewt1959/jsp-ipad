@@ -256,12 +256,31 @@ public final class LessonEngine {
             return handAttribution.hand(for: event.note)
         }
 
+        // Primary: note matches the current step's expected note for a pending hand.
         if step.leftNote == event.note, phase(.left) == .pending {
             return .left
         }
         if step.rightNote == event.note, phase(.right) == .pending {
             return .right
         }
+
+        // Secondary: note matches the *next* step's expected note for a non-pending hand.
+        // This handles legato pre-presses where the player has already pressed (or
+        // released) the current step's note and is pressing ahead into the next step.
+        // Without this check, notes in the upper register (≥ split point) that belong
+        // to the LH get routed to the RH by the fallback, producing spurious
+        // alreadySatisfied results instead of the correct legatoPrepress.
+        if let lesson,
+           currentStepIndex + 1 < lesson.steps.count {
+            let next = lesson.steps[currentStepIndex + 1]
+            if next.leftNote == event.note, phase(.left) != .pending {
+                return .left
+            }
+            if next.rightNote == event.note, phase(.right) != .pending {
+                return .right
+            }
+        }
+
         return handAttribution.hand(for: event.note)
     }
 }
