@@ -47,6 +47,8 @@ export function useMetronome(
   const ctxRef         = useRef<AudioContext | null>(null);
   const nextBeatRef    = useRef<number>(0);
   const masterGainRef  = useRef<GainNode | null>(null);
+  /** Beat position within the bar: 0 = downbeat, 1–3 = off-beats. */
+  const beatInBarRef   = useRef<number>(0);
 
   // Live refs — updated every render so the interval reads current values
   // without the effect needing to re-run.
@@ -83,7 +85,7 @@ export function useMetronome(
     // Force a grid sync on the first interval tick.
     syncedStartMsRef.current = 0;
 
-function scheduleClick(at: number) {
+function scheduleClick(at: number, downbeat: boolean) {
       const c  = ctxRef.current;
       const mg = masterGainRef.current;
       if (!c || !mg) return;
@@ -92,9 +94,11 @@ function scheduleClick(at: number) {
       const gain = c.createGain();
       osc.connect(gain);
       gain.connect(mg);
-      osc.frequency.value = 880;
+      // Downbeat: higher pitch + louder; off-beats: softer
+      osc.frequency.value = downbeat ? 1200 : 880;
+      const peak = downbeat ? 0.55 : 0.30;
       gain.gain.setValueAtTime(0, scheduled);
-      gain.gain.linearRampToValueAtTime(0.40, scheduled + 0.005);
+      gain.gain.linearRampToValueAtTime(peak, scheduled + 0.005);
       gain.gain.exponentialRampToValueAtTime(0.001, scheduled + 0.040);
       osc.start(scheduled);
       osc.stop(scheduled + 0.050);
@@ -134,7 +138,8 @@ function scheduleClick(at: number) {
         // Subtract clock skew so the AudioContext beat fires at Mac-clock
         // time firstBeatMs, not firstBeatMs + skew.
         nextBeatRef.current  = c.currentTime + (firstBeatMs - clockSkewRef.current - Date.now()) / 1000;
-
+        // Always re-anchor the bar so the first audible click is the downbeat.
+        beatInBarRef.current = 0;
       }
 
       // ── Lookahead scheduling ───────────────────────────────────────────
@@ -143,8 +148,9 @@ function scheduleClick(at: number) {
       // Clicks before lessonStartMs are count-in beats (quiet, lower pitch).
       // Clicks at or after lessonStartMs are full-volume regular beats.
       while (nextBeatRef.current < lookahead) {
-        scheduleClick(nextBeatRef.current);
+        scheduleClick(nextBeatRef.current, beatInBarRef.current === 0);
         nextBeatRef.current += beatPeriodSec;
+        beatInBarRef.current = (beatInBarRef.current + 1) % 4;
       }
 
       const elapsed = c.currentTime - (nextBeatRef.current - beatPeriodSec);

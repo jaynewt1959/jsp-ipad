@@ -30,6 +30,13 @@ Port **8089** is hardcoded in `EngineHost.swift`; server binds to `127.0.0.1`
 | `Sources/Lesson/LessonEngine.swift` | Engine-internal `EngineState` enum (NOT `LessonState` — see below) |
 | `project.yml` | xcodegen spec — **source of truth** for the Xcode project |
 | `Assets.xcassets/AppIcon.appiconset/` | App icon (must be opaque RGB PNG) |
+| `web/src/hooks/useMetronome.ts` | Web Audio API lookahead metronome; accented downbeat on beat 1 of 4/4 |
+| `web/src/hooks/useTiming.ts` | Eighth-note timing evaluation; produces per-note quality + cumulative stats |
+| `web/src/hooks/useSession.ts` | WebSocket session management |
+| `web/src/components/Sidebar.tsx` | All controls: Free/Timed, BPM, hand mode, scale, direction, Once/Loop, Reset |
+| `web/src/components/PracticePanel.tsx` | Main practice area: step label, keyboard strip, score, feedback, timing stats |
+| `web/src/components/KeyboardStrip.tsx` | Piano keyboard display highlighting next expected note(s) |
+| `web/src/components/score/ScaleScoreView.tsx` | Staff notation view of the current scale |
 
 ## Single-module target — critical difference from Mac
 
@@ -44,6 +51,35 @@ All Swift sources (`JSPiPad/`, `Sources/Lesson/`, `Sources/Server/`,
    `public struct LessonState` (the wire type). Resolved by renaming the
    engine enum to **`EngineState`** in `LessonEngine.swift`. Don't revert
    this or re-introduce another type named `LessonState` in `Sources/Lesson/`.
+
+## Web UI features — current state
+
+**Practice Style**: Free (no timing evaluation) or Timed (metronome + eighth-note grid scoring).
+
+**Metronome** (`useMetronome.ts`): Web Audio API lookahead scheduler, phase-locked to
+`lessonStartMs` from the server snapshot. Beat 1 of each 4/4 bar is accented (1200 Hz,
+gain 0.55); beats 2–4 are softer (880 Hz, gain 0.30). `beatInBarRef` is always reset to
+`0` on lesson start/restart so the first audible click is always the downbeat. Do not
+change this reset to `beatsElapsed % 4` — that was the bug we fixed.
+
+**Timing evaluation** (`useTiming.ts`): evaluates each correct note against the
+eighth-note grid. Thresholds: on-time < 15% of an eighth, slightly off < 35%, clearly
+off otherwise. Cumulative stats (early/on-time/late %) shown after 5+ notes or on
+completion.
+
+**Completion stats** shown in feedback line: elapsed time, accuracy %, mistake count,
+sync avg/best/worst (both-hands mode only), fluidity % (derived from `velocityCV`).
+
+**Loop / Once** mode: Once plays the scale once then stops; Loop auto-restarts with a
+brief countdown overlay. Switching mode sends `restartLesson` immediately.
+
+**Reset button**: restarts the current lesson without changing any other settings.
+
+**Analyze button**: sends `requestDebugLog` to the server.
+
+**Build timestamp debug bar**: thin bar at top of PracticePanel showing `__BUILD_TIME__`
+(injected by Vite) and last WS command received. Intentionally left in — useful for
+confirming the app on-device matches the latest build.
 
 ## Wire contract — keep two files in sync
 
