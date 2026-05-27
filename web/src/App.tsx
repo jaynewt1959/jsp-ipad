@@ -34,12 +34,12 @@ export default function App() {
   useEffect(() => {
     if (!loopMode || !isCompleted) return;
     setLoopCountdown(3);
-    const t1 = setTimeout(() => setLoopCountdown(2), 1000);
-    const t2 = setTimeout(() => setLoopCountdown(1), 2000);
+    const t1 = setTimeout(() => setLoopCountdown(2), 500);
+    const t2 = setTimeout(() => setLoopCountdown(1), 1000);
     const t3 = setTimeout(() => {
       setLoopCountdown(null);
       send({ type: "restartLesson" });
-    }, 3000);
+    }, 1500);
     return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); setLoopCountdown(null); };
   }, [isCompleted, loopMode, send]);
 
