@@ -54,7 +54,7 @@ actor EngineHost {
                         else { continue }
                         switch CommandType(rawValue: cmd.type) {
                         case .startLesson:     await coordinator.handleStart()
-                        case .restartLesson:   await coordinator.handleRestart()
+                        case .restartLesson:   await coordinator.handleRestart(clearHistory: cmd.clearHistory ?? false)
                         case .stopMidi:        await coordinator.handleStopMidi()
                         case .requestDebugLog: await coordinator.handleRequestDebugLog()
                         case .setHandMode:

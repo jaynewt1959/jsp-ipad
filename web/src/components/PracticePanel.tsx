@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import type { Snapshot } from "../types";
 import type { TimingResult, TimingStats } from "../hooks/useTiming";
 import { getScaleDescriptor } from "../data/scales";
@@ -13,11 +14,13 @@ interface Props {
   loopMode: boolean;
   loopCountdown: number | null;
   lastCmd: string | null;
+  /** Incremented on manual Reset; used to clear the latched completion display. */
+  manualResetSeq: number;
 }
 
 // Keyboard range is computed dynamically from the active scale (see below).
 
-export function PracticePanel({ snapshot, timing, timingStats, loopMode, loopCountdown, lastCmd }: Props) {
+export function PracticePanel({ snapshot, timing, timingStats, loopMode, loopCountdown, lastCmd, manualResetSeq }: Props) {
   const lesson = snapshot?.lesson;
   const step = snapshot?.lesson.currentStep ?? null;
   const handStatus = snapshot?.handStatus;
@@ -114,6 +117,36 @@ export function PracticePanel({ snapshot, timing, timingStats, loopMode, loopCou
     return `✓ Complete${parts ? ` — ${parts}` : ""}${loopMode ? " · next run starting…" : " · press Reset to begin again"}`;
   })() : null;
 
+  // ── Latch completion display until first note of new session ──────
+  // Keeps the stats visible after loop/manual restart so the user can
+  // read them. Cleared once the first MIDI note advances the step.
+  const [latchedCompletion, setLatchedCompletion] = useState<string | null>(null);
+  const [latchedStats, setLatchedStats] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (completionFeedback) {
+      setLatchedCompletion(completionFeedback);
+      setLatchedStats(statsLine);
+    }
+  }, [completionFeedback, statsLine]);
+
+  // Clear on first note of new session (loop restart)
+  const stepIndex = snapshot?.lesson.currentStepIndex ?? 0;
+  useEffect(() => {
+    if (!isCompleted && stepIndex > 0 && latchedCompletion) {
+      setLatchedCompletion(null);
+      setLatchedStats(null);
+    }
+  }, [isCompleted, stepIndex, latchedCompletion]);
+
+  // Clear immediately on manual Reset (user is done with old run)
+  useEffect(() => {
+    if (manualResetSeq > 0) {
+      setLatchedCompletion(null);
+      setLatchedStats(null);
+    }
+  }, [manualResetSeq]);
+
   return (
     <main className="practice">
       <div style={{ fontSize: "11px", color: "#666", padding: "2px 8px", display: "flex", justifyContent: "space-between" }}>
@@ -177,9 +210,9 @@ export function PracticePanel({ snapshot, timing, timingStats, loopMode, loopCou
 
       <section className="practice__feedback">
         <p style={feedbackColor ? { color: feedbackColor } : undefined}>
-          {completionFeedback ?? feedbackWithTiming}
+          {completionFeedback ?? latchedCompletion ?? feedbackWithTiming}
         </p>
-        {statsLine && <p className="practice__timing-stats">{statsLine}</p>}
+        {(statsLine ?? latchedStats) && <p className="practice__timing-stats">{statsLine ?? latchedStats}</p>}
       </section>
     </main>
   );

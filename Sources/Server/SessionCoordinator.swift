@@ -106,8 +106,11 @@ actor SessionCoordinator {
     }
 
     /// Reset the lesson to step 0 without touching MIDI.
-    func handleRestart() async {
+    /// When `clearHistory` is true (manual Reset button), also discard
+    /// the previous run's event log so Analyze starts clean.
+    func handleRestart(clearHistory: Bool = false) async {
         rewindLesson()
+        if clearHistory { eventLog.clearAll() }
         await broadcast()
     }
 

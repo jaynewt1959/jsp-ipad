@@ -75,7 +75,7 @@ export type HandMode = "together" | "leftOnly" | "rightOnly";
 
 export type Command =
   | { type: "startLesson" }
-  | { type: "restartLesson" }
+  | { type: "restartLesson"; clearHistory?: boolean }
   | { type: "stopMidi" }
   | { type: "requestDebugLog" }
   | { type: "setHandMode"; handMode: HandMode }

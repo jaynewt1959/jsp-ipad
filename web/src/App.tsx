@@ -29,6 +29,9 @@ export default function App() {
   const [loopMode, setLoopMode] = useState(false);
   const isCompleted = snapshot?.lesson.isCompleted ?? false;
   const [loopCountdown, setLoopCountdown] = useState<number | null>(null);
+  // Incremented on manual Reset so PracticePanel can clear the latched
+  // completion feedback immediately (loop restarts keep it visible).
+  const [manualResetSeq, setManualResetSeq] = useState(0);
 
   // When the lesson completes in loop mode, run a 3-2-1 countdown then restart.
   useEffect(() => {
@@ -50,7 +53,8 @@ export default function App() {
   void lastNoteOnMs; void lessonActive; // suppress unused-var warnings while disabled
 
   const handleReset = () => {
-    send({ type: "restartLesson" });
+    setManualResetSeq(s => s + 1);
+    send({ type: "restartLesson", clearHistory: true });
   };
 
   const metro = snapshot?.metronome ?? { enabled: false, bpm: 80 };
@@ -77,7 +81,7 @@ export default function App() {
         onSetLoopMode={setLoopMode}
         onReset={handleReset}
       />
-      <PracticePanel snapshot={snapshot} timing={timing} timingStats={timingStats} loopMode={loopMode} loopCountdown={loopCountdown} lastCmd={lastCmd} />
+      <PracticePanel snapshot={snapshot} timing={timing} timingStats={timingStats} loopMode={loopMode} loopCountdown={loopCountdown} lastCmd={lastCmd} manualResetSeq={manualResetSeq} />
       {debugLog && (
         <DebugPanel log={debugLog} onClose={clearDebugLog} />
       )}

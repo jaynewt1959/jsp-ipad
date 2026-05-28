@@ -149,6 +149,10 @@ public struct InboundCommand: Decodable, Sendable {
     public let scaleKey: String?
     /// Payload for `setDirection` — a `Direction.rawValue` string.
     public let direction: String?
+    /// When true, `restartLesson` also discards the previous run's event
+    /// log (manual Reset). Loop restarts omit this so Analyze can still
+    /// inspect the completed run.
+    public let clearHistory: Bool?
 }
 
 public enum CommandType: String {
