@@ -60,8 +60,6 @@ targets:
       - path: Sources/Lesson
       - path: Sources/Server
       - path: Sources/MIDI
-
-    resources:
       - path: Assets.xcassets
 
     dependencies:
