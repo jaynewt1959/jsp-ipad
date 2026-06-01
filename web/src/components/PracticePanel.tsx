@@ -3,6 +3,7 @@ import type { Snapshot } from "../types";
 import type { TimingResult, TimingStats } from "../hooks/useTiming";
 import { getScaleDescriptor } from "../data/scales";
 import { noteName, FLAT_KEY_SIGNATURES } from "../util/noteName";
+import { compositeScore } from "../util/compositeScore";
 import { HandStatusBadge } from "./HandStatusBadge";
 import { KeyboardStrip } from "./KeyboardStrip";
 import { ScaleScoreView } from "./score/ScaleScoreView";
@@ -104,7 +105,9 @@ export function PracticePanel({ snapshot, timing, timingStats, loopMode, loopCou
       const lh = scaleDesc.lhMidi[worstStep];
       return rh != null && lh != null ? `${noteName(rh, useFlats)}+${noteName(lh, useFlats)}` : null;
     })() : null;
+    const score = compositeScore(totalSteps, mistakes, skips, lesson.velocityCV, lesson.rhythmCV);
     const parts = [
+      score != null ? `Score ${Math.round(score)}` : null,
       timeStr && `${timeStr}`,
       `${precision}% precision`,
       `${mistakes} mistake${mistakes === 1 ? "" : "s"}`,
