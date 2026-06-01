@@ -309,17 +309,15 @@ actor SessionCoordinator {
         case .correct(let hand, let stepIndex):
             setStatus(.correct, for: hand)
             if !isPartnerHand(hand) {
-                correctVelocities.append(Double(velocity))
-                correctNoteOnMs.append(Date().timeIntervalSince1970 * 1000)
-            }
-            // Capture the arrival time for client-side timing evaluation.
-            if !isPartnerHand(hand) {
                 let nowWallMs = Int64(Date().timeIntervalSince1970 * 1000)
-                lastNoteOnMs = nowWallMs
                 displayStepIndex = stepIndex
                 // Sync tracking: measure gap between the two hands in together mode.
                 if handMode == .together {
                     if let firstWallMs = firstHandArrivedWallMs {
+                        // Second hand arrived — compute sync gap, but do NOT
+                        // update lastNoteOnMs / correctNoteOnMs / velocity again.
+                        // Timing and rhythm stats should count once per step,
+                        // using the first hand's arrival (closest to the beat).
                         let delta = SyncMetrics.handSyncGapMs(
                             firstEventMs: firstHandArrivedEventMs,
                             secondEventMs: eventTimestampMs,
@@ -336,9 +334,19 @@ actor SessionCoordinator {
                         firstHandArrivedEventMs = nil
                         firstHandArrivedWallMs = nil
                     } else {
+                        // First hand arrived — record timing/rhythm/velocity
+                        // data once for this step.
+                        lastNoteOnMs = nowWallMs
+                        correctVelocities.append(Double(velocity))
+                        correctNoteOnMs.append(Date().timeIntervalSince1970 * 1000)
                         firstHandArrivedEventMs = eventTimestampMs
                         firstHandArrivedWallMs = nowWallMs
                     }
+                } else {
+                    // Single-hand mode — record normally.
+                    lastNoteOnMs = nowWallMs
+                    correctVelocities.append(Double(velocity))
+                    correctNoteOnMs.append(Date().timeIntervalSince1970 * 1000)
                 }
             }
             guard !isPartnerHand(hand) else { break }
