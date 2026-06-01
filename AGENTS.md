@@ -134,11 +134,13 @@ transparency and shows a "box of circles" placeholder instead. Always
 generate with `Image.new("RGB", ...)`, not `"RGBA"`.
 
 Outstanding issue: the asset catalog may not compile correctly via
-xcodegen's `resources:` path. If the icon still shows as the placeholder
-after a clean build, open Xcode, delete the `Assets.xcassets` reference
-in the project navigator, and re-add it by dragging the folder in — this
-forces Xcode to register it as an asset catalog (compile phase) rather
-than a simple file copy.
+xcodegen's `resources:` path. This was fixed by moving `Assets.xcassets`
+to the `sources:` block in `project.yml`, which ensures it is included
+in the asset catalog compile phase.
+
+## Persistence
+
+Settings (like the current key) should be persisted using `UserDefaults`.
 
 ## Safe area
 
