@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useSession } from "./hooks/useSession";
 import { useMetronome } from "./hooks/useMetronome";
 import { useTiming } from "./hooks/useTiming";
@@ -9,11 +9,6 @@ import { DebugPanel } from "./components/DebugPanel";
 
 export default function App() {
   const { snapshot, status, send: sessionSend, debugLog, clearDebugLog } = useSession();
-  const [lastCmd, setLastCmd] = useState<string | null>(null);
-  const trackingSend = useCallback((cmd: Parameters<typeof sessionSend>[0]) => {
-    setLastCmd(cmd.type);
-    sessionSend(cmd);
-  }, [sessionSend]);
 
   // ── Toast notification ─────────────────────────────────────────────────
   const [toast, setToast] = useState<string | null>(null);
@@ -28,7 +23,7 @@ export default function App() {
 
   // ── Loop (auto-repeat) mode ───────────────────────────────────────────────
   const [loopMode, setLoopMode] = useState(loadSavedLoopMode);
-  const { send, persistLoopMode } = usePersistedSettings(trackingSend, status, snapshot, setLoopMode);
+  const { send, persistLoopMode } = usePersistedSettings(sessionSend, status, snapshot, setLoopMode);
   const isCompleted = snapshot?.lesson.isCompleted ?? false;
   const [loopCountdown, setLoopCountdown] = useState<number | null>(null);
   // Incremented on manual Reset so PracticePanel can clear the latched
@@ -83,7 +78,7 @@ export default function App() {
         onSetLoopMode={persistLoopMode}
         onReset={handleReset}
       />
-      <PracticePanel snapshot={snapshot} timing={timing} timingStats={timingStats} loopMode={loopMode} loopCountdown={loopCountdown} lastCmd={lastCmd} manualResetSeq={manualResetSeq} />
+      <PracticePanel snapshot={snapshot} timing={timing} timingStats={timingStats} loopMode={loopMode} loopCountdown={loopCountdown} manualResetSeq={manualResetSeq} />
       {debugLog && (
         <DebugPanel log={debugLog} onClose={clearDebugLog} />
       )}
