@@ -2,17 +2,18 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useSession } from "./hooks/useSession";
 import { useMetronome } from "./hooks/useMetronome";
 import { useTiming } from "./hooks/useTiming";
+import { usePersistedSettings, loadSavedLoopMode } from "./hooks/usePersistedSettings";
 import { Sidebar } from "./components/Sidebar";
 import { PracticePanel } from "./components/PracticePanel";
 import { DebugPanel } from "./components/DebugPanel";
 
 export default function App() {
-  const { snapshot, status, send: rawSend, debugLog, clearDebugLog } = useSession();
+  const { snapshot, status, send: sessionSend, debugLog, clearDebugLog } = useSession();
   const [lastCmd, setLastCmd] = useState<string | null>(null);
-  const send = useCallback((cmd: Parameters<typeof rawSend>[0]) => {
+  const trackingSend = useCallback((cmd: Parameters<typeof sessionSend>[0]) => {
     setLastCmd(cmd.type);
-    rawSend(cmd);
-  }, [rawSend]);
+    sessionSend(cmd);
+  }, [sessionSend]);
 
   // ── Toast notification ─────────────────────────────────────────────────
   const [toast, setToast] = useState<string | null>(null);
@@ -26,7 +27,8 @@ export default function App() {
   void showToast; // suppress unused-var warning while inactivity reset is disabled
 
   // ── Loop (auto-repeat) mode ───────────────────────────────────────────────
-  const [loopMode, setLoopMode] = useState(false);
+  const [loopMode, setLoopMode] = useState(loadSavedLoopMode);
+  const { send, persistLoopMode } = usePersistedSettings(trackingSend, status, snapshot, setLoopMode);
   const isCompleted = snapshot?.lesson.isCompleted ?? false;
   const [loopCountdown, setLoopCountdown] = useState<number | null>(null);
   // Incremented on manual Reset so PracticePanel can clear the latched
@@ -78,7 +80,7 @@ export default function App() {
         send={send}
         beatPhase={beatPhase}
         loopMode={loopMode}
-        onSetLoopMode={setLoopMode}
+        onSetLoopMode={persistLoopMode}
         onReset={handleReset}
       />
       <PracticePanel snapshot={snapshot} timing={timing} timingStats={timingStats} loopMode={loopMode} loopCountdown={loopCountdown} lastCmd={lastCmd} manualResetSeq={manualResetSeq} />
