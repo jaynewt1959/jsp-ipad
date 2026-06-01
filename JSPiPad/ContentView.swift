@@ -20,11 +20,22 @@ struct ContentView: View {
                 WebViewContainer()
                     .ignoresSafeArea()
             } else {
-                Color.black
+                Color("LaunchBackground")
                     .ignoresSafeArea()
                     .overlay(
-                        ProgressView()
-                            .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                        VStack(spacing: 24) {
+                            Image("LaunchIcon")
+                                .resizable()
+                                .scaledToFit()
+                                .frame(width: 180, height: 180)
+                                .clipShape(RoundedRectangle(cornerRadius: 36, style: .continuous))
+                            Text("JSP")
+                                .font(.title2)
+                                .fontWeight(.semibold)
+                                .foregroundColor(.white)
+                            ProgressView()
+                                .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                        }
                     )
                     .task { await waitForServer() }
             }

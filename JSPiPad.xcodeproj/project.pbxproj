@@ -12,6 +12,7 @@
 		1E99729E0A894121C8E37072 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = ACC4BC2F84F2C8556FC2375E /* Assets.xcassets */; };
 		2116E215FB63A2157B925300 /* StaticFiles.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB1B8148BB21F4A3AC49A962 /* StaticFiles.swift */; };
 		28F06D701C09A8C863575FF6 /* SessionCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10DCCAB35F6A79631DD2E04B /* SessionCoordinator.swift */; };
+		2DD89408ADC4D028D44DEB1F /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 1C48308B9C8D12972007B1F3 /* PrivacyInfo.xcprivacy */; };
 		3475121D9181BE3D2543C847 /* HTTPServer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 24AE5917ADF6270330108F56 /* HTTPServer.swift */; };
 		4C8F841C8FE2E0D4115869D8 /* BuildTimestamp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 42E2B6D122715EC1368E0C34 /* BuildTimestamp.swift */; };
 		537159903A2829E8C822DA07 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = 351541C349ED1B571170521C /* Models.swift */; };
@@ -31,6 +32,7 @@
 /* Begin PBXFileReference section */
 		086DEF4A68C708DF7B211420 /* EngineHost.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EngineHost.swift; sourceTree = "<group>"; };
 		10DCCAB35F6A79631DD2E04B /* SessionCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionCoordinator.swift; sourceTree = "<group>"; };
+		1C48308B9C8D12972007B1F3 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		24AE5917ADF6270330108F56 /* HTTPServer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HTTPServer.swift; sourceTree = "<group>"; };
 		351541C349ED1B571170521C /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
 		374E26EC95281195F5AE38EC /* JSPiPad.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = JSPiPad.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -127,6 +129,7 @@
 				086DEF4A68C708DF7B211420 /* EngineHost.swift */,
 				6C50396CFBEE5752B8322C17 /* Info.plist */,
 				9A21133D56BD1AB0D8BB8D88 /* JSPiPadApp.swift */,
+				1C48308B9C8D12972007B1F3 /* PrivacyInfo.xcprivacy */,
 			);
 			path = JSPiPad;
 			sourceTree = "<group>";
@@ -195,6 +198,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				1E99729E0A894121C8E37072 /* Assets.xcassets in Resources */,
+				2DD89408ADC4D028D44DEB1F /* PrivacyInfo.xcprivacy in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
