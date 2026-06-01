@@ -88,6 +88,9 @@ public struct LessonState: Encodable, Sendable {
     /// Coefficient of variation (stddev/mean × 100) of correct-note velocities.
     /// Lower = more even. nil until ≥2 correct notes played.
     public let velocityCV: Double?
+    /// Coefficient of variation (stddev/mean × 100) of inter-onset intervals.
+    /// Lower = more rhythmically even. nil until ≥3 correct notes played.
+    public let rhythmCV: Double?
 }
 
 /// Current metronome settings, always included in the snapshot.

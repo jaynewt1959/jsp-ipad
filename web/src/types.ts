@@ -52,6 +52,8 @@ export interface LessonState {
   worstSyncStep: number | null;
   /** Stddev/mean × 100 of correct-note velocities. Lower = more even. null until ≥2 notes. */
   velocityCV: number | null;
+  /** Stddev/mean × 100 of inter-onset intervals. Lower = more rhythmically even. null until ≥3 notes. */
+  rhythmCV: number | null;
 }
 
 export interface MetronomeState {

@@ -75,6 +75,9 @@ actor SessionCoordinator {
     private var syncMaxMs: Double? = nil
     private var syncWorstStep: Int? = nil
     private var correctVelocities: [Double] = []
+    /// Wall-clock ms timestamps of each correct note-on for the active hand.
+    /// Used to compute inter-onset interval CV (rhythm metric).
+    private var correctNoteOnMs: [Double] = []
     private var midiTask: Task<Void, Never>?
     /// Notes currently held down. Used for legato synthesis (detecting
     /// when the next step's note is already physically held as the
@@ -305,7 +308,10 @@ actor SessionCoordinator {
 
         case .correct(let hand, let stepIndex):
             setStatus(.correct, for: hand)
-            if !isPartnerHand(hand) { correctVelocities.append(Double(velocity)) }
+            if !isPartnerHand(hand) {
+                correctVelocities.append(Double(velocity))
+                correctNoteOnMs.append(Date().timeIntervalSince1970 * 1000)
+            }
             // Capture the arrival time for client-side timing evaluation.
             if !isPartnerHand(hand) {
                 let nowWallMs = Int64(Date().timeIntervalSince1970 * 1000)
@@ -401,6 +407,7 @@ actor SessionCoordinator {
         syncMaxMs = nil
         syncWorstStep = nil
         correctVelocities = []
+        correctNoteOnMs = []
         let now = Date()
         lessonStartedAt = now
         lessonFinishedAt = nil
@@ -445,7 +452,8 @@ actor SessionCoordinator {
                 minSyncMs: syncMinMs,
                 maxSyncMs: syncMaxMs,
                 worstSyncStep: syncWorstStep,
-                velocityCV: velocityCV()
+                velocityCV: velocityCV(),
+                rhythmCV: rhythmCV()
             ),
             handStatus: HandStatusPair(left: leftStatus, right: rightStatus),
             feedback: feedback,
@@ -530,6 +538,21 @@ actor SessionCoordinator {
 
     private func label(_ hand: HandSide) -> String {
         hand == .left ? "Left" : "Right"
+    }
+
+    /// CV of inter-onset intervals (IOIs) between consecutive correct notes.
+    /// Lower = more rhythmically even. nil until ≥3 correct notes (≥2 IOIs).
+    private func rhythmCV() -> Double? {
+        guard correctNoteOnMs.count >= 3 else { return nil }
+        var iois: [Double] = []
+        for i in 1..<correctNoteOnMs.count {
+            iois.append(correctNoteOnMs[i] - correctNoteOnMs[i - 1])
+        }
+        let n = Double(iois.count)
+        let mean = iois.reduce(0, +) / n
+        guard mean > 0 else { return nil }
+        let variance = iois.reduce(0.0) { $0 + ($1 - mean) * ($1 - mean) } / n
+        return sqrt(variance) / mean * 100
     }
 
     private func velocityCV() -> Double? {
