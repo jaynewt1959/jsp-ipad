@@ -90,7 +90,7 @@ export function PracticePanel({ snapshot, timing, timingStats, loopMode, loopCou
     const mistakes = Object.values(snapshot?.mistakesByStep ?? {}).reduce((a, b) => a + b, 0);
     const skips = lesson.alreadySatisfiedCount ?? 0;
     const totalSteps = lesson.totalSteps;
-    const accuracy = Math.round(totalSteps / (totalSteps + mistakes + skips) * 100);
+    const precision = Math.round(totalSteps / (totalSteps + mistakes + skips) * 100);
     const elapsed = snapshot?.elapsedSec;
     const timeStr = elapsed != null
       ? `${Math.floor(elapsed / 60)}:${String(Math.floor(elapsed % 60)).padStart(2, "0")}`
@@ -107,12 +107,12 @@ export function PracticePanel({ snapshot, timing, timingStats, loopMode, loopCou
     })() : null;
     const parts = [
       timeStr && `${timeStr}`,
-      `${accuracy}% accuracy`,
+      `${precision}% precision`,
       `${mistakes} mistake${mistakes === 1 ? "" : "s"}`,
       syncMs  != null ? `sync avg ±${Math.round(syncMs)}ms` : null,
       minSync != null ? `best ${Math.round(minSync)}ms` : null,
       maxSync != null ? `worst ${Math.round(maxSync)}ms${worstNote ? ` (${worstNote})` : ""}` : null,
-      lesson.velocityCV != null ? `fluidity ${(100 - Math.min(lesson.velocityCV, 100)).toFixed(0)}%` : null,
+      lesson.velocityCV != null ? `evenness ${(100 - Math.min(lesson.velocityCV, 100)).toFixed(0)}%` : null,
     ].filter(Boolean).join(" \u00b7 ");
     return `✓ Complete${parts ? ` — ${parts}` : ""}${loopMode ? " · next run starting…" : " · press Reset to begin again"}`;
   })() : null;
