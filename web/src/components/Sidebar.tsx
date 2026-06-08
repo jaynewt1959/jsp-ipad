@@ -1,5 +1,7 @@
 import type { Command, HandMode, Snapshot } from "../types";
 import type { ConnectionStatus } from "../api/ws";
+import type { PlayMode } from "../hooks/usePersistedSettings";
+import type { CycleOrder } from "../data/cycleOrders";
 import { KEY_SPECS } from "../data/scales";
 
 const BPM_PRESETS = [60, 80, 100, 120] as const;
@@ -10,15 +12,20 @@ interface Props {
   send: (cmd: Command) => void;
   /** Beat phase 0–1 from useMetronome; drives the visual pulse. */
   beatPhase: number;
-  /** Whether the lesson will auto-restart on completion. */
-  loopMode: boolean;
-  /** Set loop mode on/off (does not restart). */
-  onSetLoopMode: (loop: boolean) => void;
-  /** Restart immediately (does not change loop mode). */
+  playMode: PlayMode;
+  onSetPlayMode: (mode: PlayMode) => void;
+  cycleOrder: CycleOrder;
+  onSetCycleOrder: (order: CycleOrder) => void;
+  /** Restart immediately (does not change play mode). */
   onReset: () => void;
 }
 
-export function Sidebar({ snapshot, connection, send, beatPhase, loopMode, onSetLoopMode, onReset }: Props) {
+export function Sidebar({
+  snapshot, connection, send, beatPhase,
+  playMode, onSetPlayMode,
+  cycleOrder, onSetCycleOrder,
+  onReset,
+}: Props) {
   const lesson = snapshot?.lesson;
   const midi = snapshot?.midi;
   const metro = snapshot?.metronome ?? { enabled: false, bpm: 80 };
@@ -175,25 +182,35 @@ export function Sidebar({ snapshot, connection, send, beatPhase, loopMode, onSet
         </div>
       </section>
 
-      <section className="sidebar__section sidebar__section--connection">
+      <section className="sidebar__section">
         <h2 className="sidebar__section-title">Controls</h2>
         <div className="sidebar__buttons">
-          <div className="sidebar__practice-style">
-            <button
-              className={`btn btn--style ${!loopMode ? "btn--style-active" : ""}`}
-              onClick={() => { onSetLoopMode(false); send({ type: "restartLesson" }); }}
-              disabled={connection.kind !== "open"}
-            >
-              Once
-            </button>
-            <button
-              className={`btn btn--style ${loopMode ? "btn--style-active" : ""}`}
-              onClick={() => { onSetLoopMode(true); send({ type: "restartLesson" }); }}
-              disabled={connection.kind !== "open"}
-            >
-              ⟳ Loop
-            </button>
+          <div className="sidebar__direction">
+            {(["once", "loop", "cycle"] as const).map(mode => (
+              <button
+                key={mode}
+                className={`btn btn--style ${playMode === mode ? "btn--style-active" : ""}`}
+                onClick={() => { onSetPlayMode(mode); send({ type: "restartLesson" }); }}
+                disabled={connection.kind !== "open"}
+              >
+                {mode === "once" ? "Once" : mode === "loop" ? "Loop" : "Cycle"}
+              </button>
+            ))}
           </div>
+
+          <div className="sidebar__practice-style">
+            {(["random", "fifths"] as const).map(o => (
+              <button
+                key={o}
+                className={`btn btn--style ${cycleOrder === o && playMode === "cycle" ? "btn--style-active" : ""}`}
+                onClick={() => onSetCycleOrder(o)}
+                disabled={connection.kind !== "open" || playMode !== "cycle"}
+              >
+                {o === "random" ? "Random" : "Fifths"}
+              </button>
+            ))}
+          </div>
+
           <button
             className="btn btn--restart"
             onClick={onReset}
@@ -204,7 +221,7 @@ export function Sidebar({ snapshot, connection, send, beatPhase, loopMode, onSet
           <button
             className="btn btn--debug"
             onClick={() => send({ type: "requestDebugLog" })}
-            disabled={connection.kind !== "open"}
+            disabled={connection.kind !== "open" || !(midi?.running ?? false)}
           >
             Analyze
           </button>

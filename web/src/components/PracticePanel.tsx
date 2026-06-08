@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import type { Snapshot } from "../types";
 import type { TimingResult, TimingStats } from "../hooks/useTiming";
+import type { PlayMode } from "../hooks/usePersistedSettings";
 import { getScaleDescriptor } from "../data/scales";
 import { noteName, FLAT_KEY_SIGNATURES } from "../util/noteName";
 import { compositeScore } from "../util/compositeScore";
@@ -12,7 +13,7 @@ interface Props {
   snapshot: Snapshot | null;
   timing: TimingResult | null;
   timingStats: TimingStats;
-  loopMode: boolean;
+  playMode: PlayMode;
   loopCountdown: number | null;
   /** Incremented on manual Reset; used to clear the latched completion display. */
   manualResetSeq: number;
@@ -20,7 +21,7 @@ interface Props {
 
 // Keyboard range is computed dynamically from the active scale (see below).
 
-export function PracticePanel({ snapshot, timing, timingStats, loopMode, loopCountdown, manualResetSeq }: Props) {
+export function PracticePanel({ snapshot, timing, timingStats, playMode, loopCountdown, manualResetSeq }: Props) {
   const lesson = snapshot?.lesson;
   const step = snapshot?.lesson.currentStep ?? null;
   const handStatus = snapshot?.handStatus;
@@ -117,7 +118,12 @@ export function PracticePanel({ snapshot, timing, timingStats, loopMode, loopCou
       lesson.velocityCV != null ? `evenness ${(100 - Math.min(lesson.velocityCV, 100)).toFixed(0)}%` : null,
       lesson.rhythmCV != null ? `rhythm ${(100 - Math.min(lesson.rhythmCV, 100)).toFixed(0)}%` : null,
     ].filter(Boolean).join(" \u00b7 ");
-    return `✓ Complete${parts ? ` — ${parts}` : ""}${loopMode ? " · next run starting…" : " · press Reset to begin again"}`;
+    const suffix = playMode === "once"
+      ? " \u00b7 press Reset to begin again"
+      : playMode === "loop"
+        ? " \u00b7 next run starting\u2026"
+        : " \u00b7 next scale starting\u2026";
+    return `\u2713 Complete${parts ? ` \u2014 ${parts}` : ""}${suffix}`;
   })() : null;
 
   // ── Latch completion display until first note of new session ──────
@@ -152,6 +158,7 @@ export function PracticePanel({ snapshot, timing, timingStats, loopMode, loopCou
 
   return (
     <main className="practice">
+      <div className="practice__debug-bar">Build: {__BUILD_TIME__}</div>
       <header className="practice__header">
         <h1 className="practice__step">{stepLabel}</h1>
         <div className="practice__progress" aria-hidden>

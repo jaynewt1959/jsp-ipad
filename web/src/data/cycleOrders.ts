@@ -1,0 +1,104 @@
+// cycleOrders.ts — builds ordered pools of scale keys for cyclic practice.
+//
+// Uses KEY_SPECS from scales.ts as the canonical root list.
+
+import { KEY_SPECS } from "./scales";
+
+export type CycleOrder     = "random" | "chromatic" | "fifths";
+export type CycleScaleType = "major" | "minor" | "both";
+
+// ---------------------------------------------------------------------------
+// Root orderings (by KEY_SPECS label)
+// ---------------------------------------------------------------------------
+
+const CHROMATIC_LABELS = KEY_SPECS.map(s => s.label);
+// C G D A E B F♯ C♯ A♭ E♭ B♭ F
+const FIFTHS_LABELS = ["C","G","D","A","E","B","F\u266F","C\u266F","A\u266D","E\u266D","B\u266D","F"];
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+/** Rotate `arr` so that the element at `startIndex` comes first. */
+function rotate<T>(arr: T[], startIndex: number): T[] {
+  if (startIndex <= 0) return arr;
+  const i = startIndex % arr.length;
+  return [...arr.slice(i), ...arr.slice(0, i)];
+}
+
+/** Fisher-Yates shuffle (returns new array). */
+function shuffle<T>(arr: T[]): T[] {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+/** Find the KEY_SPECS index whose majorKey or minorKey matches `scaleKey`. */
+function rootIndexForKey(scaleKey: string): number {
+  const idx = KEY_SPECS.findIndex(
+    s => s.majorKey === scaleKey || s.minorKey === scaleKey
+  );
+  return idx >= 0 ? idx : 0;
+}
+
+/** Map a KEY_SPECS label to its index in KEY_SPECS. */
+const labelToSpecIndex = new Map<string, number>(KEY_SPECS.map((s, i) => [s.label, i]));
+
+/**
+ * Given an ordering of labels, return KEY_SPECS indices in that order,
+ * rotated so the root matching `startKey` comes first.
+ */
+function orderedSpecIndices(labels: readonly string[], startKey: string): number[] {
+  const specIdx = rootIndexForKey(startKey);
+  const startLabel = KEY_SPECS[specIdx].label;
+  const labelIdx = labels.indexOf(startLabel);
+  const rotated = rotate([...labels], labelIdx >= 0 ? labelIdx : 0);
+  return rotated.map(l => labelToSpecIndex.get(l) ?? 0);
+}
+
+// ---------------------------------------------------------------------------
+// Public API
+// ---------------------------------------------------------------------------
+
+/**
+ * Build an ordered array of scale key strings for cyclic practice.
+ *
+ * @param scaleType  Which scales to include.
+ * @param order      How to order them.
+ * @param startKey   The scale key to start from (e.g. "dMajor").
+ *                   For chromatic/fifths the pool is rotated so this key's
+ *                   root comes first.  For random, the pool is shuffled.
+ */
+export function buildCyclePool(
+  scaleType: CycleScaleType,
+  order: CycleOrder,
+  startKey: string,
+): string[] {
+  if (order === "random") {
+    return shuffle(collectKeys(scaleType));
+  }
+
+  const labels = order === "fifths" ? FIFTHS_LABELS : CHROMATIC_LABELS;
+  const indices = orderedSpecIndices(labels, startKey);
+
+  const keys: string[] = [];
+  for (const i of indices) {
+    const spec = KEY_SPECS[i];
+    if (scaleType === "major" || scaleType === "both") keys.push(spec.majorKey);
+    if (scaleType === "minor" || scaleType === "both") keys.push(spec.minorKey);
+  }
+  return keys;
+}
+
+/** Flat list of all keys for the given scale type (unordered). */
+function collectKeys(scaleType: CycleScaleType): string[] {
+  const keys: string[] = [];
+  for (const spec of KEY_SPECS) {
+    if (scaleType === "major" || scaleType === "both") keys.push(spec.majorKey);
+    if (scaleType === "minor" || scaleType === "both") keys.push(spec.minorKey);
+  }
+  return keys;
+}

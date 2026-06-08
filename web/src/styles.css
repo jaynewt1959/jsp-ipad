@@ -265,7 +265,24 @@ body {
 .btn--hand-active.btn--hand-rightOnly { background: #c2410c; border-color: #c2410c; color: white; opacity: 1; }
 .btn--hand-active.btn--hand-together  { background: #15803d; border-color: #15803d; color: white; opacity: 1; }
 
-.sidebar__section--connection { margin-top: auto; }
+/* Controls section — no auto-margin, sits right after Direction. */
+
+/* ===== Cycle options (nested inside Controls) ============================ */
+
+.sidebar__cycle-options {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 4px 0 2px;
+}
+
+.sidebar__cycle-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--fg-soft);
+  font-weight: 600;
+}
 
 /* ===== Buttons =========================================================== */
 
@@ -404,6 +421,14 @@ body {
   display: flex;
   flex-direction: column;
   gap: 24px;
+}
+
+.practice__debug-bar {
+  font-size: 10px;
+  color: var(--fg-soft);
+  opacity: 0.5;
+  text-align: right;
+  margin: -16px 0 -8px;
 }
 
 .practice__header {

@@ -1,8 +1,14 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useSession } from "./hooks/useSession";
 import { useMetronome } from "./hooks/useMetronome";
 import { useTiming } from "./hooks/useTiming";
-import { usePersistedSettings, loadSavedLoopMode } from "./hooks/usePersistedSettings";
+import {
+  usePersistedSettings, loadSavedPlayMode,
+  loadSavedCycleOrder,
+} from "./hooks/usePersistedSettings";
+import type { PlayMode } from "./hooks/usePersistedSettings";
+import type { CycleOrder } from "./data/cycleOrders";
+import { buildCyclePool } from "./data/cycleOrders";
 import { Sidebar } from "./components/Sidebar";
 import { PracticePanel } from "./components/PracticePanel";
 import { DebugPanel } from "./components/DebugPanel";
@@ -19,20 +25,57 @@ export default function App() {
     setToast(msg);
     toastTimer.current = setTimeout(() => { setToast(null); }, durationMs);
   };
-  void showToast; // suppress unused-var warning while inactivity reset is disabled
 
-  // ── Loop (auto-repeat) mode ───────────────────────────────────────────────
-  const [loopMode, setLoopMode] = useState(loadSavedLoopMode);
-  const { send, persistLoopMode } = usePersistedSettings(sessionSend, status, snapshot, setLoopMode);
+  // ── Play mode (Once / Loop / Cycle) ────────────────────────────────────
+  const [playMode, setPlayMode] = useState<PlayMode>(loadSavedPlayMode);
+  const [cycleOrder, setCycleOrder] = useState<CycleOrder>(loadSavedCycleOrder);
+  const { send, persistPlayMode, persistCycleOrder } =
+    usePersistedSettings(sessionSend, status, snapshot, setPlayMode, setCycleOrder);
   const isCompleted = snapshot?.lesson.isCompleted ?? false;
   const [loopCountdown, setLoopCountdown] = useState<number | null>(null);
   // Incremented on manual Reset so PracticePanel can clear the latched
   // completion feedback immediately (loop restarts keep it visible).
   const [manualResetSeq, setManualResetSeq] = useState(0);
 
-  // When the lesson completes in loop mode, run a 3-2-1 countdown then restart.
+  // ── Stable refs for effect callbacks (avoids dep churn) ──────────────
+  const sendRef = useRef(send);
+  sendRef.current = send;
+
+  // ── Cycle pool state ───────────────────────────────────────────────────
+  const cyclePoolRef = useRef<string[]>([]);
+  const cycleIndexRef = useRef(0);
+
+  // Derive cycle scale type from the current key's major/minor selection.
+  const currentKey = snapshot?.lesson.key ?? "cMajor";
+  const cycleScaleType = currentKey.includes("Natural") ? "minor" as const : "major" as const;
+
+  // Rebuild pool when cycle settings change (or when entering cycle mode).
+  const rebuildPool = useCallback(() => {
+    cyclePoolRef.current = buildCyclePool(cycleScaleType, cycleOrder, currentKey);
+    cycleIndexRef.current = 0;
+  }, [cycleScaleType, cycleOrder, currentKey]);
+
   useEffect(() => {
-    if (!loopMode || !isCompleted) return;
+    if (playMode === "cycle") rebuildPool();
+  }, [playMode, cycleOrder, cycleScaleType]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  /** Advance to the next scale in the cycle pool. Returns the new key. */
+  const advanceCycle = useCallback((): string => {
+    const pool = cyclePoolRef.current;
+    if (pool.length === 0) {
+      rebuildPool();
+    }
+    cycleIndexRef.current += 1;
+    if (cycleIndexRef.current >= cyclePoolRef.current.length) {
+      // Wrap: rebuild for random (re-shuffle), or loop back for ordered.
+      rebuildPool();
+    }
+    return cyclePoolRef.current[cycleIndexRef.current];
+  }, [rebuildPool]);
+
+  // ── Loop mode: 3-2-1 countdown then restart same scale ─────────────────
+  useEffect(() => {
+    if (playMode !== "loop" || !isCompleted) return;
     setLoopCountdown(3);
     const t1 = setTimeout(() => setLoopCountdown(2), 500);
     const t2 = setTimeout(() => setLoopCountdown(1), 1000);
@@ -41,7 +84,42 @@ export default function App() {
       send({ type: "restartLesson" });
     }, 1500);
     return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); setLoopCountdown(null); };
-  }, [isCompleted, loopMode, send]);
+  }, [isCompleted, playMode, send]);
+
+  // ── Cycle mode: check mistakes, then retry or advance ──────────────────
+  // Mistake count as a stable primitive — avoids object-reference dep churn.
+  const mistakeCount = isCompleted
+    ? Object.values(snapshot?.mistakesByStep ?? {}).reduce((a, b) => a + b, 0)
+    : 0;
+  // Keep advanceCycle in a ref so the effect doesn't re-fire when the
+  // pool rebuilds (which changes rebuildPool → advanceCycle references).
+  const advanceCycleRef = useRef(advanceCycle);
+  advanceCycleRef.current = advanceCycle;
+
+  useEffect(() => {
+    if (playMode !== "cycle" || !isCompleted) return;
+
+    if (mistakeCount > 0) {
+      // Retry same scale after a brief delay.
+      showToast(`Try again — ${mistakeCount} mistake${mistakeCount === 1 ? "" : "s"}`, 1400);
+      const t = setTimeout(() => {
+        sendRef.current({ type: "restartLesson" });
+      }, 1500);
+      return () => clearTimeout(t);
+    }
+
+    // Zero mistakes — advance with 3-2-1 countdown.
+    setLoopCountdown(3);
+    const t1 = setTimeout(() => setLoopCountdown(2), 500);
+    const t2 = setTimeout(() => setLoopCountdown(1), 1000);
+    const t3 = setTimeout(() => {
+      setLoopCountdown(null);
+      const nextKey = advanceCycleRef.current();
+      sendRef.current({ type: "setScale", scaleKey: nextKey });
+      sendRef.current({ type: "restartLesson" });
+    }, 1500);
+    return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); setLoopCountdown(null); };
+  }, [isCompleted, playMode, mistakeCount]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Inactivity auto-reset ──────────────────────────────────────────────
   // TEMPORARILY DISABLED for debugging. Re-enable by restoring the useEffect below.
@@ -74,11 +152,13 @@ export default function App() {
         connection={status}
         send={send}
         beatPhase={beatPhase}
-        loopMode={loopMode}
-        onSetLoopMode={persistLoopMode}
+        playMode={playMode}
+        onSetPlayMode={persistPlayMode}
+        cycleOrder={cycleOrder}
+        onSetCycleOrder={persistCycleOrder}
         onReset={handleReset}
       />
-      <PracticePanel snapshot={snapshot} timing={timing} timingStats={timingStats} loopMode={loopMode} loopCountdown={loopCountdown} manualResetSeq={manualResetSeq} />
+      <PracticePanel snapshot={snapshot} timing={timing} timingStats={timingStats} playMode={playMode} loopCountdown={loopCountdown} manualResetSeq={manualResetSeq} />
       {debugLog && (
         <DebugPanel log={debugLog} onClose={clearDebugLog} />
       )}

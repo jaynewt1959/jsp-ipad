@@ -1,6 +1,9 @@
 import { useEffect, useRef, useCallback } from "react";
 import type { Command, Snapshot } from "../types";
 import type { ConnectionStatus } from "../api/ws";
+import type { CycleOrder } from "../data/cycleOrders";
+
+export type PlayMode = "once" | "loop" | "cycle";
 
 const STORAGE_KEY = "jsp-settings";
 
@@ -10,13 +13,28 @@ interface SavedSettings {
   direction: string;
   metronomeEnabled: boolean;
   metronomeBpm: number;
-  loopMode: boolean;
+  playMode: PlayMode;
+  cycleOrder: CycleOrder;
+}
+
+/** Legacy shape — only used for one-time migration. */
+interface LegacySettings {
+  loopMode?: boolean;
+  playMode?: PlayMode;
 }
 
 function load(): SavedSettings | null {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? (JSON.parse(raw) as SavedSettings) : null;
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as SavedSettings & LegacySettings;
+    // Migrate old loopMode boolean → playMode string.
+    if (parsed.playMode === undefined && (parsed as LegacySettings).loopMode !== undefined) {
+      parsed.playMode = (parsed as LegacySettings).loopMode ? "loop" : "once";
+      delete (parsed as any).loopMode;
+      save(parsed);
+    }
+    return parsed;
   } catch {
     return null;
   }
@@ -37,7 +55,8 @@ export function usePersistedSettings(
   rawSend: (cmd: Command) => void,
   connection: ConnectionStatus,
   snapshot: Snapshot | null,
-  setLoopMode: (v: boolean) => void,
+  setPlayMode: (v: PlayMode) => void,
+  setCycleOrder: (v: CycleOrder) => void,
 ) {
   const restoredRef = useRef(false);
 
@@ -70,8 +89,9 @@ export function usePersistedSettings(
         metronomeBpm: saved.metronomeBpm,
       });
     }
-    setLoopMode(saved.loopMode);
-  }, [connection.kind, snapshot, rawSend, setLoopMode]);
+    setPlayMode(saved.playMode ?? "once");
+    if (saved.cycleOrder) setCycleOrder(saved.cycleOrder);
+  }, [connection.kind, snapshot, rawSend, setPlayMode, setCycleOrder]);
 
   // Wrap send to intercept setting commands and persist them.
   const send = useCallback(
@@ -85,7 +105,8 @@ export function usePersistedSettings(
         direction: "ascending",
         metronomeEnabled: false,
         metronomeBpm: 80,
-        loopMode: false,
+        playMode: "once",
+        cycleOrder: "random",
       };
 
       switch (cmd.type) {
@@ -110,20 +131,34 @@ export function usePersistedSettings(
     [rawSend],
   );
 
-  // Persist loop mode changes (loop mode is client-only, not a command).
-  const persistLoopMode = useCallback(
-    (loop: boolean) => {
-      setLoopMode(loop);
+  // Persist play mode changes (client-only, not a command).
+  const persistPlayMode = useCallback(
+    (mode: PlayMode) => {
+      setPlayMode(mode);
       const prev = load();
-      if (prev) save({ ...prev, loopMode: loop });
+      if (prev) save({ ...prev, playMode: mode });
     },
-    [setLoopMode],
+    [setPlayMode],
   );
 
-  return { send, persistLoopMode };
+  const persistCycleOrder = useCallback(
+    (order: CycleOrder) => {
+      setCycleOrder(order);
+      const prev = load();
+      if (prev) save({ ...prev, cycleOrder: order });
+    },
+    [setCycleOrder],
+  );
+
+  return { send, persistPlayMode, persistCycleOrder };
 }
 
-/** Read saved loopMode for initial state (before hook mounts). */
-export function loadSavedLoopMode(): boolean {
-  return load()?.loopMode ?? false;
+/** Read saved playMode for initial state (before hook mounts). */
+export function loadSavedPlayMode(): PlayMode {
+  const saved = load();
+  return saved?.playMode ?? "once";
+}
+
+export function loadSavedCycleOrder(): CycleOrder {
+  return load()?.cycleOrder ?? "random";
 }
