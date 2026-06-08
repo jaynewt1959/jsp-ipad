@@ -50,8 +50,8 @@ export default function App() {
   const cycleScaleType = currentKey.includes("Natural") ? "minor" as const : "major" as const;
 
   // Rebuild pool when cycle settings change (or when entering cycle mode).
-  const rebuildPool = useCallback(() => {
-    cyclePoolRef.current = buildCyclePool(cycleScaleType, cycleOrder, currentKey);
+  const rebuildPool = useCallback((avoidKey?: string) => {
+    cyclePoolRef.current = buildCyclePool(cycleScaleType, cycleOrder, currentKey, avoidKey);
     cycleIndexRef.current = 0;
   }, [cycleScaleType, cycleOrder, currentKey]);
 
@@ -68,7 +68,9 @@ export default function App() {
     cycleIndexRef.current += 1;
     if (cycleIndexRef.current >= cyclePoolRef.current.length) {
       // Wrap: rebuild for random (re-shuffle), or loop back for ordered.
-      rebuildPool();
+      // Pass the last key so random mode avoids repeating it.
+      const lastKey = pool[pool.length - 1];
+      rebuildPool(lastKey);
     }
     return cyclePoolRef.current[cycleIndexRef.current];
   }, [rebuildPool]);

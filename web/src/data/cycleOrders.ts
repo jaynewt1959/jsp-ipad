@@ -26,12 +26,21 @@ function rotate<T>(arr: T[], startIndex: number): T[] {
   return [...arr.slice(i), ...arr.slice(0, i)];
 }
 
-/** Fisher-Yates shuffle (returns new array). */
-function shuffle<T>(arr: T[]): T[] {
+/**
+ * Fisher-Yates shuffle (returns new array).
+ * If `avoidFirst` is provided and equals the first element after
+ * shuffling, swap it with a random later position so the caller
+ * never sees the same value twice in a row across pool boundaries.
+ */
+function shuffle<T>(arr: T[], avoidFirst?: T): T[] {
   const a = [...arr];
   for (let i = a.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
     [a[i], a[j]] = [a[j], a[i]];
+  }
+  if (avoidFirst !== undefined && a.length > 1 && a[0] === avoidFirst) {
+    const swap = 1 + Math.floor(Math.random() * (a.length - 1));
+    [a[0], a[swap]] = [a[swap], a[0]];
   }
   return a;
 }
@@ -76,9 +85,11 @@ export function buildCyclePool(
   scaleType: CycleScaleType,
   order: CycleOrder,
   startKey: string,
+  /** Last key played — used to avoid duplicates at random pool boundaries. */
+  avoidKey?: string,
 ): string[] {
   if (order === "random") {
-    return shuffle(collectKeys(scaleType));
+    return shuffle(collectKeys(scaleType), avoidKey);
   }
 
   const labels = order === "fifths" ? FIFTHS_LABELS : CHROMATIC_LABELS;

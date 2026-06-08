@@ -33,7 +33,9 @@ Port **8089** is hardcoded in `EngineHost.swift`; server binds to `127.0.0.1`
 | `web/src/hooks/useMetronome.ts` | Web Audio API lookahead metronome; accented downbeat on beat 1 of 4/4 |
 | `web/src/hooks/useTiming.ts` | Eighth-note timing evaluation; produces per-note quality + cumulative stats |
 | `web/src/hooks/useSession.ts` | WebSocket session management |
-| `web/src/components/Sidebar.tsx` | All controls: Free/Timed, BPM, hand mode, scale, direction, Once/Loop, Reset |
+| `web/src/components/Sidebar.tsx` | All controls: Free/Timed, BPM, hand mode, scale, direction, Once/Loop/Cycle, Reset |
+| `web/src/data/cycleOrders.ts` | Builds ordered scale pools for cyclic practice (random, chromatic, fifths) |
+| `web/src/hooks/usePersistedSettings.ts` | Persists sidebar settings (incl. playMode, cycleOrder) to localStorage |
 | `web/src/components/PracticePanel.tsx` | Main practice area: step label, keyboard strip, score, feedback, timing stats |
 | `web/src/components/KeyboardStrip.tsx` | Piano keyboard display highlighting next expected note(s) |
 | `web/src/components/score/ScaleScoreView.tsx` | Staff notation view of the current scale |
@@ -70,12 +72,18 @@ completion.
 **Completion stats** shown in feedback line: elapsed time, accuracy %, mistake count,
 sync avg/best/worst (both-hands mode only), fluidity % (derived from `velocityCV`).
 
-**Loop / Once** mode: Once plays the scale once then stops; Loop auto-restarts with a
-brief countdown overlay. Switching mode sends `restartLesson` immediately.
+**Play mode** (Once / Loop / Cycle): Once plays the scale once then stops; Loop
+auto-restarts the same scale with a countdown; Cycle advances to the next scale on
+completion with zero mistakes, or auto-retries with a toast on mistakes. Cycle order
+is Random (Fisher-Yates, no back-to-back duplicates) or Circle of Fifths. Scale type
+(major/minor) is derived from the Scale section's Major/Nat. Minor toggle — there is
+no separate cycle scale-type selector. Cycle state (pool, index) lives in refs in
+`App.tsx`; settings are persisted via `usePersistedSettings`. Switching mode sends
+`restartLesson` immediately.
 
 **Reset button**: restarts the current lesson without changing any other settings.
 
-**Analyze button**: sends `requestDebugLog` to the server.
+**Analyze button**: sends `requestDebugLog` to the server. Disabled when MIDI is not running.
 
 **Build timestamp debug bar**: thin bar at top of PracticePanel showing `__BUILD_TIME__`
 (injected by Vite) and last WS command received. Intentionally left in — useful for
