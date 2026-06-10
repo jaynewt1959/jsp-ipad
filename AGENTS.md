@@ -33,9 +33,9 @@ Port **8089** is hardcoded in `EngineHost.swift`; server binds to `127.0.0.1`
 | `web/src/hooks/useMetronome.ts` | Web Audio API lookahead metronome; accented downbeat on beat 1 of 4/4 |
 | `web/src/hooks/useTiming.ts` | Eighth-note timing evaluation; produces per-note quality + cumulative stats |
 | `web/src/hooks/useSession.ts` | WebSocket session management |
-| `web/src/components/Sidebar.tsx` | All controls: Free/Timed, BPM, hand mode, scale, direction, Once/Loop/Cycle, Reset |
+| `web/src/components/Sidebar.tsx` | All controls: Free/Timed, BPM, hand mode, scale type + minor sub-type + key, direction, Once/Loop/Cycle, Reset |
 | `web/src/data/cycleOrders.ts` | Builds ordered scale pools for cyclic practice (random, chromatic, fifths) |
-| `web/src/hooks/usePersistedSettings.ts` | Persists sidebar settings (incl. playMode, cycleOrder) to localStorage |
+| `web/src/hooks/usePersistedSettings.ts` | Persists sidebar settings (incl. playMode, cycleOrder, minorVariant) to localStorage |
 | `web/src/components/PracticePanel.tsx` | Main practice area: step label, keyboard strip, score, feedback, timing stats |
 | `web/src/components/KeyboardStrip.tsx` | Piano keyboard display highlighting next expected note(s) |
 | `web/src/components/score/ScaleScoreView.tsx` | Staff notation view of the current scale |
@@ -56,6 +56,25 @@ All Swift sources (`JSPiPad/`, `Sources/Lesson/`, `Sources/Server/`,
 
 ## Web UI features — current state
 
+**Scales**: 48 two-octave scales — 12 keys × 4 types (Major, Natural Minor, Harmonic
+Minor, Melodic Minor). The Scale section is a two-tier selector: a **Major | Minor** row
+plus an always-visible **Natural | Harmonic | Melodic** sub-row that is enabled only when
+Minor is active (and highlights the current sub-type). A 12-key grid (C, C♯, D, E♭, E, F,
+F♯, G, A♭, A, B♭, B) sets the root while keeping the current type/sub-type. The chosen
+minor sub-type is remembered (persisted) so toggling Major↔Minor returns to it. Harmonic
+minor raises the 7th (same notes ascending and descending); melodic minor raises the 6th
+and 7th ascending and descends as the natural minor. Each scale renders its printed
+grand-staff score with per-note fingerings and a live highlight overlay.
+
+**Sidebar controls (top → bottom)**:
+- **Connect MIDI** — starts CoreMIDI + the lesson; toggles to Disconnect while running.
+- **Practice Style** — Free or ♪ Timed.
+- **Tempo (BPM)** — 60 / 80 / 100 / 120 presets; active only in Timed.
+- **Practice Mode** — Left Hand / Right Hand / Both Hands.
+- **Scale** — type + minor sub-type + 12-key grid (see **Scales** above).
+- **Direction** — ↑ Asc / ↓ Desc / ⇅ Both.
+- **Controls** — Once / Loop / Cycle; Random / Fifths (Cycle only); Reset; Analyze.
+
 **Practice Style**: Free (no timing evaluation) or Timed (metronome + eighth-note grid scoring).
 
 **Metronome** (`useMetronome.ts`): Web Audio API lookahead scheduler, phase-locked to
@@ -75,8 +94,9 @@ sync avg/best/worst (both-hands mode only), fluidity % (derived from `velocityCV
 **Play mode** (Once / Loop / Cycle): Once plays the scale once then stops; Loop
 auto-restarts the same scale with a countdown; Cycle advances to the next scale on
 completion with zero mistakes, or auto-retries with a toast on mistakes. Cycle order
-is Random (Fisher-Yates, no back-to-back duplicates) or Circle of Fifths. Scale type
-(major/minor) is derived from the Scale section's Major/Nat. Minor toggle — there is
+is Random (Fisher-Yates, no back-to-back duplicates) or Circle of Fifths. The cycle
+pool follows the Scale section's current selection — major keys when Major is active,
+otherwise the keys of the active minor sub-type (natural/harmonic/melodic); there is
 no separate cycle scale-type selector. Cycle state (pool, index) lives in refs in
 `App.tsx`; settings are persisted via `usePersistedSettings`. Switching mode sends
 `restartLesson` immediately.
@@ -85,9 +105,9 @@ no separate cycle scale-type selector. Cycle state (pool, index) lives in refs i
 
 **Analyze button**: sends `requestDebugLog` to the server. Disabled when MIDI is not running.
 
-**Build timestamp debug bar**: thin bar at top of PracticePanel showing `__BUILD_TIME__`
-(injected by Vite) and last WS command received. Intentionally left in — useful for
-confirming the app on-device matches the latest build.
+**Build timestamp bar**: thin bar at the top of PracticePanel showing `Build: {__BUILD_TIME__}`
+(injected by Vite). Intentionally left in — useful for confirming the app on-device
+matches the latest build. (The earlier last-WS-command readout was removed.)
 
 ## Wire contract — keep two files in sync
 
