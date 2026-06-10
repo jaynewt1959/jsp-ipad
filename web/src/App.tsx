@@ -4,11 +4,12 @@ import { useMetronome } from "./hooks/useMetronome";
 import { useTiming } from "./hooks/useTiming";
 import {
   usePersistedSettings, loadSavedPlayMode,
-  loadSavedCycleOrder,
+  loadSavedCycleOrder, loadSavedMinorVariant,
 } from "./hooks/usePersistedSettings";
 import type { PlayMode } from "./hooks/usePersistedSettings";
 import type { CycleOrder } from "./data/cycleOrders";
 import { buildCyclePool } from "./data/cycleOrders";
+import { minorVariantOf, isMinorKey, type MinorVariant } from "./data/scales";
 import { Sidebar } from "./components/Sidebar";
 import { PracticePanel } from "./components/PracticePanel";
 import { DebugPanel } from "./components/DebugPanel";
@@ -29,8 +30,9 @@ export default function App() {
   // ── Play mode (Once / Loop / Cycle) ────────────────────────────────────
   const [playMode, setPlayMode] = useState<PlayMode>(loadSavedPlayMode);
   const [cycleOrder, setCycleOrder] = useState<CycleOrder>(loadSavedCycleOrder);
-  const { send, persistPlayMode, persistCycleOrder } =
-    usePersistedSettings(sessionSend, status, snapshot, setPlayMode, setCycleOrder);
+  const [minorVariant, setMinorVariant] = useState<MinorVariant>(loadSavedMinorVariant);
+  const { send, persistPlayMode, persistCycleOrder, persistMinorVariant } =
+    usePersistedSettings(sessionSend, status, snapshot, setPlayMode, setCycleOrder, setMinorVariant);
   const isCompleted = snapshot?.lesson.isCompleted ?? false;
   const [loopCountdown, setLoopCountdown] = useState<number | null>(null);
   // Incremented on manual Reset so PracticePanel can clear the latched
@@ -45,19 +47,22 @@ export default function App() {
   const cyclePoolRef = useRef<string[]>([]);
   const cycleIndexRef = useRef(0);
 
-  // Derive cycle scale type from the current key's major/minor selection.
+  // Derive cycle scale type from the current key (major vs any minor form).
   const currentKey = snapshot?.lesson.key ?? "cMajor";
-  const cycleScaleType = currentKey.includes("Natural") ? "minor" as const : "major" as const;
+  const cycleScaleType = isMinorKey(currentKey) ? "minor" as const : "major" as const;
+  // Which minor sub-type the cycle uses: the current key's own variant when on
+  // a minor, otherwise the remembered selection.
+  const cycleMinorVariant = minorVariantOf(currentKey) ?? minorVariant;
 
   // Rebuild pool when cycle settings change (or when entering cycle mode).
   const rebuildPool = useCallback((avoidKey?: string) => {
-    cyclePoolRef.current = buildCyclePool(cycleScaleType, cycleOrder, currentKey, avoidKey);
+    cyclePoolRef.current = buildCyclePool(cycleScaleType, cycleOrder, currentKey, avoidKey, cycleMinorVariant);
     cycleIndexRef.current = 0;
-  }, [cycleScaleType, cycleOrder, currentKey]);
+  }, [cycleScaleType, cycleOrder, currentKey, cycleMinorVariant]);
 
   useEffect(() => {
     if (playMode === "cycle") rebuildPool();
-  }, [playMode, cycleOrder, cycleScaleType]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [playMode, cycleOrder, cycleScaleType, cycleMinorVariant]); // eslint-disable-line react-hooks/exhaustive-deps
 
   /** Advance to the next scale in the cycle pool. Returns the new key. */
   const advanceCycle = useCallback((): string => {
@@ -158,6 +163,8 @@ export default function App() {
         onSetPlayMode={persistPlayMode}
         cycleOrder={cycleOrder}
         onSetCycleOrder={persistCycleOrder}
+        minorVariant={minorVariant}
+        onSetMinorVariant={persistMinorVariant}
         onReset={handleReset}
       />
       <PracticePanel snapshot={snapshot} timing={timing} timingStats={timingStats} playMode={playMode} loopCountdown={loopCountdown} manualResetSeq={manualResetSeq} />

@@ -2,7 +2,7 @@
 //
 // Uses KEY_SPECS from scales.ts as the canonical root list.
 
-import { KEY_SPECS } from "./scales";
+import { KEY_SPECS, minorKeyFor, type MinorVariant } from "./scales";
 
 export type CycleOrder     = "random" | "chromatic" | "fifths";
 export type CycleScaleType = "major" | "minor" | "both";
@@ -45,10 +45,11 @@ function shuffle<T>(arr: T[], avoidFirst?: T): T[] {
   return a;
 }
 
-/** Find the KEY_SPECS index whose majorKey or minorKey matches `scaleKey`. */
+/** Find the KEY_SPECS index whose major or any minor key matches `scaleKey`. */
 function rootIndexForKey(scaleKey: string): number {
   const idx = KEY_SPECS.findIndex(
-    s => s.majorKey === scaleKey || s.minorKey === scaleKey
+    s => s.majorKey === scaleKey || s.naturalMinorKey === scaleKey ||
+         s.harmonicMinorKey === scaleKey || s.melodicMinorKey === scaleKey
   );
   return idx >= 0 ? idx : 0;
 }
@@ -87,9 +88,11 @@ export function buildCyclePool(
   startKey: string,
   /** Last key played — used to avoid duplicates at random pool boundaries. */
   avoidKey?: string,
+  /** Which minor sub-type "minor"/"both" resolves to. */
+  minorVariant: MinorVariant = "natural",
 ): string[] {
   if (order === "random") {
-    return shuffle(collectKeys(scaleType), avoidKey);
+    return shuffle(collectKeys(scaleType, minorVariant), avoidKey);
   }
 
   const labels = order === "fifths" ? FIFTHS_LABELS : CHROMATIC_LABELS;
@@ -99,17 +102,17 @@ export function buildCyclePool(
   for (const i of indices) {
     const spec = KEY_SPECS[i];
     if (scaleType === "major" || scaleType === "both") keys.push(spec.majorKey);
-    if (scaleType === "minor" || scaleType === "both") keys.push(spec.minorKey);
+    if (scaleType === "minor" || scaleType === "both") keys.push(minorKeyFor(spec, minorVariant));
   }
   return keys;
 }
 
 /** Flat list of all keys for the given scale type (unordered). */
-function collectKeys(scaleType: CycleScaleType): string[] {
+function collectKeys(scaleType: CycleScaleType, minorVariant: MinorVariant): string[] {
   const keys: string[] = [];
   for (const spec of KEY_SPECS) {
     if (scaleType === "major" || scaleType === "both") keys.push(spec.majorKey);
-    if (scaleType === "minor" || scaleType === "both") keys.push(spec.minorKey);
+    if (scaleType === "minor" || scaleType === "both") keys.push(minorKeyFor(spec, minorVariant));
   }
   return keys;
 }

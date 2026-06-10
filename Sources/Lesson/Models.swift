@@ -11,9 +11,10 @@ import Foundation
 // MARK: - Key, direction, hand
 
 /// The lesson's key signature — one case per scale taught by the app.
-/// Major scales follow circle-of-5ths order; natural minor scales mirror
-/// the same 12 roots.  `rawValue` is the camelCase name used in the
-/// WebSocket wire (e.g. "cMajor", "aNaturalMinor").
+/// Major scales follow circle-of-5ths order; the natural, harmonic, and
+/// melodic minor scales each mirror the same 12 roots.  `rawValue` is the
+/// camelCase name used in the WebSocket wire (e.g. "cMajor", "aNaturalMinor",
+/// "aHarmonicMinor", "aMelodicMinor").
 public enum KeySignature: String, Codable, Equatable, CaseIterable {
     // MARK: Major
     case cMajor
@@ -41,6 +42,32 @@ public enum KeySignature: String, Codable, Equatable, CaseIterable {
     case ebNaturalMinor
     case bbNaturalMinor
     case fNaturalMinor
+    // MARK: Harmonic minor
+    case cHarmonicMinor
+    case gHarmonicMinor
+    case dHarmonicMinor
+    case aHarmonicMinor
+    case eHarmonicMinor
+    case bHarmonicMinor
+    case fSharpHarmonicMinor
+    case cSharpHarmonicMinor
+    case abHarmonicMinor
+    case ebHarmonicMinor
+    case bbHarmonicMinor
+    case fHarmonicMinor
+    // MARK: Melodic minor
+    case cMelodicMinor
+    case gMelodicMinor
+    case dMelodicMinor
+    case aMelodicMinor
+    case eMelodicMinor
+    case bMelodicMinor
+    case fSharpMelodicMinor
+    case cSharpMelodicMinor
+    case abMelodicMinor
+    case ebMelodicMinor
+    case bbMelodicMinor
+    case fMelodicMinor
 }
 
 /// Direction of travel through the scale.

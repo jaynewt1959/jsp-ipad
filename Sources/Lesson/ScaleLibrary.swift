@@ -33,6 +33,13 @@ private struct ScaleDef {
     let rhDesc:       [Int]   // count == 14
     /// LH fingering descending (14 values, starting from degree 14 down to degree 1).
     let lhDesc:       [Int]   // count == 14
+    /// Optional explicit descending semitone offsets (apex−1 → root, 14 values).
+    /// When non-nil the builders use these for the descending leg instead of
+    /// reversing the ascending notes. Populated only for melodic minor, whose
+    /// descending form (natural minor) differs from its ascending form.
+    /// `var` (not `let`) so the synthesized memberwise initializer keeps it an
+    /// optional parameter — existing definitions omit it and default to nil.
+    var descendingIntervals: [Int]? = nil   // count == 14 when present
 }
 
 // MARK: - Shared interval patterns
@@ -44,6 +51,22 @@ private let majorIntervals: [Int] =
 /// Natural minor scale semitone offsets (W H W W H W W, two octaves).
 private let naturalMinorIntervals: [Int] =
     [0, 2, 3, 5, 7, 8, 10, 12, 14, 15, 17, 19, 20, 22, 24]
+
+/// Harmonic minor: natural minor with a raised 7th (W H W W H A2 H), two
+/// octaves. Symmetric — identical ascending and descending, so no
+/// `descendingIntervals` is needed (the builders reverse the ascending notes).
+private let harmonicMinorIntervals: [Int] =
+    [0, 2, 3, 5, 7, 8, 11, 12, 14, 15, 17, 19, 20, 23, 24]
+
+/// Melodic minor ASCENDING: natural minor with raised 6th and 7th, two octaves.
+private let melodicMinorAscIntervals: [Int] =
+    [0, 2, 3, 5, 7, 9, 11, 12, 14, 15, 17, 19, 21, 23, 24]
+
+/// Melodic minor DESCENDING offsets (traditional treatment: descends as the
+/// natural minor). 14 values running from apex−1 (offset 22) down to the root
+/// (offset 0); the apex itself comes from the ascending array.
+private let melodicMinorDescIntervals: [Int] =
+    [22, 20, 19, 17, 15, 14, 12, 10, 8, 7, 5, 3, 2, 0]
 
 // MARK: - Shared fingering groups
 //
@@ -247,6 +270,152 @@ private let allDefs: [ScaleDef] = [
              lhRoot: 53, rhRoot: 65, intervals: naturalMinorIntervals,
              rhAsc: g2_rhAsc,  lhAsc: g2_lhAsc,
              rhDesc: g2_rhDesc, lhDesc: g2_lhDesc),
+
+    // ----------------------------------------------------------------
+    // HARMONIC MINOR SCALES  (raised 7th; symmetric ascending/descending)
+    // Fingering mirrors the natural minor of the same key: standard pedagogy
+    // fingers the three minor forms identically, and the raised 7th does not
+    // move a thumb-crossing. No descendingIntervals (symmetric).
+    // ----------------------------------------------------------------
+
+    ScaleDef(key: .cHarmonicMinor,
+             lhRoot: 48, rhRoot: 60, intervals: harmonicMinorIntervals,
+             rhAsc: g1_rhAsc,  lhAsc: g1_lhAsc,
+             rhDesc: g1_rhDesc, lhDesc: g1_lhDesc),
+
+    ScaleDef(key: .gHarmonicMinor,
+             lhRoot: 43, rhRoot: 55, intervals: harmonicMinorIntervals,
+             rhAsc: g1_rhAsc,  lhAsc: g1_lhAsc,
+             rhDesc: g1_rhDesc, lhDesc: g1_lhDesc),
+
+    ScaleDef(key: .dHarmonicMinor,
+             lhRoot: 50, rhRoot: 62, intervals: harmonicMinorIntervals,
+             rhAsc: g1_rhAsc,  lhAsc: g1_lhAsc,
+             rhDesc: g1_rhDesc, lhDesc: g1_lhDesc),
+
+    ScaleDef(key: .aHarmonicMinor,
+             lhRoot: 45, rhRoot: 57, intervals: harmonicMinorIntervals,
+             rhAsc: g1_rhAsc,  lhAsc: g1_lhAsc,
+             rhDesc: g1_rhDesc, lhDesc: g1_lhDesc),
+
+    ScaleDef(key: .eHarmonicMinor,
+             lhRoot: 52, rhRoot: 64, intervals: harmonicMinorIntervals,
+             rhAsc: g1_rhAsc,  lhAsc: g1_lhAsc,
+             rhDesc: g1_rhDesc, lhDesc: g1_lhDesc),
+
+    ScaleDef(key: .bHarmonicMinor,
+             lhRoot: 47, rhRoot: 59, intervals: harmonicMinorIntervals,
+             rhAsc: g3_rhAsc,  lhAsc: g3_lhAsc,
+             rhDesc: g3_rhDesc, lhDesc: g3_lhDesc),
+
+    ScaleDef(key: .fSharpHarmonicMinor,
+             lhRoot: 42, rhRoot: 54, intervals: harmonicMinorIntervals,
+             rhAsc: g7_rhAsc,  lhAsc: g4_lhAsc,
+             rhDesc: g7_rhDesc, lhDesc: g4_lhDesc),
+
+    ScaleDef(key: .cSharpHarmonicMinor,
+             lhRoot: 49, rhRoot: 61, intervals: harmonicMinorIntervals,
+             rhAsc: g7_rhAsc,  lhAsc: g5_lhAsc,
+             rhDesc: g7_rhDesc, lhDesc: g5_lhDesc),
+
+    ScaleDef(key: .abHarmonicMinor,
+             lhRoot: 44, rhRoot: 56, intervals: harmonicMinorIntervals,
+             rhAsc: abMaj_rhAsc,  lhAsc: abMin_lhAsc,
+             rhDesc: abMaj_rhDesc, lhDesc: abMin_lhDesc),
+
+    ScaleDef(key: .ebHarmonicMinor,
+             lhRoot: 51, rhRoot: 63, intervals: harmonicMinorIntervals,
+             rhAsc: ebMaj_rhAsc,  lhAsc: ebMin_lhAsc,
+             rhDesc: ebMaj_rhDesc, lhDesc: ebMin_lhDesc),
+
+    ScaleDef(key: .bbHarmonicMinor,
+             lhRoot: 46, rhRoot: 58, intervals: harmonicMinorIntervals,
+             rhAsc: bbMaj_rhAsc,  lhAsc: bbMin_lhAsc,
+             rhDesc: bbMaj_rhDesc, lhDesc: bbMin_lhDesc),
+
+    ScaleDef(key: .fHarmonicMinor,
+             lhRoot: 53, rhRoot: 65, intervals: harmonicMinorIntervals,
+             rhAsc: g2_rhAsc,  lhAsc: g2_lhAsc,
+             rhDesc: g2_rhDesc, lhDesc: g2_lhDesc),
+
+    // ----------------------------------------------------------------
+    // MELODIC MINOR SCALES  (raised 6th/7th ascending; natural minor descending)
+    // Ascending fingering = natural minor; descendingIntervals carries the
+    // natural-minor descending offsets so the builders emit the natural-minor
+    // descending notes paired with the natural-minor descending fingers.
+    // ----------------------------------------------------------------
+
+    ScaleDef(key: .cMelodicMinor,
+             lhRoot: 48, rhRoot: 60, intervals: melodicMinorAscIntervals,
+             rhAsc: g1_rhAsc,  lhAsc: g1_lhAsc,
+             rhDesc: g1_rhDesc, lhDesc: g1_lhDesc,
+             descendingIntervals: melodicMinorDescIntervals),
+
+    ScaleDef(key: .gMelodicMinor,
+             lhRoot: 43, rhRoot: 55, intervals: melodicMinorAscIntervals,
+             rhAsc: g1_rhAsc,  lhAsc: g1_lhAsc,
+             rhDesc: g1_rhDesc, lhDesc: g1_lhDesc,
+             descendingIntervals: melodicMinorDescIntervals),
+
+    ScaleDef(key: .dMelodicMinor,
+             lhRoot: 50, rhRoot: 62, intervals: melodicMinorAscIntervals,
+             rhAsc: g1_rhAsc,  lhAsc: g1_lhAsc,
+             rhDesc: g1_rhDesc, lhDesc: g1_lhDesc,
+             descendingIntervals: melodicMinorDescIntervals),
+
+    ScaleDef(key: .aMelodicMinor,
+             lhRoot: 45, rhRoot: 57, intervals: melodicMinorAscIntervals,
+             rhAsc: g1_rhAsc,  lhAsc: g1_lhAsc,
+             rhDesc: g1_rhDesc, lhDesc: g1_lhDesc,
+             descendingIntervals: melodicMinorDescIntervals),
+
+    ScaleDef(key: .eMelodicMinor,
+             lhRoot: 52, rhRoot: 64, intervals: melodicMinorAscIntervals,
+             rhAsc: g1_rhAsc,  lhAsc: g1_lhAsc,
+             rhDesc: g1_rhDesc, lhDesc: g1_lhDesc,
+             descendingIntervals: melodicMinorDescIntervals),
+
+    ScaleDef(key: .bMelodicMinor,
+             lhRoot: 47, rhRoot: 59, intervals: melodicMinorAscIntervals,
+             rhAsc: g3_rhAsc,  lhAsc: g3_lhAsc,
+             rhDesc: g3_rhDesc, lhDesc: g3_lhDesc,
+             descendingIntervals: melodicMinorDescIntervals),
+
+    ScaleDef(key: .fSharpMelodicMinor,
+             lhRoot: 42, rhRoot: 54, intervals: melodicMinorAscIntervals,
+             rhAsc: g7_rhAsc,  lhAsc: g4_lhAsc,
+             rhDesc: g7_rhDesc, lhDesc: g4_lhDesc,
+             descendingIntervals: melodicMinorDescIntervals),
+
+    ScaleDef(key: .cSharpMelodicMinor,
+             lhRoot: 49, rhRoot: 61, intervals: melodicMinorAscIntervals,
+             rhAsc: g7_rhAsc,  lhAsc: g5_lhAsc,
+             rhDesc: g7_rhDesc, lhDesc: g5_lhDesc,
+             descendingIntervals: melodicMinorDescIntervals),
+
+    ScaleDef(key: .abMelodicMinor,
+             lhRoot: 44, rhRoot: 56, intervals: melodicMinorAscIntervals,
+             rhAsc: abMaj_rhAsc,  lhAsc: abMin_lhAsc,
+             rhDesc: abMaj_rhDesc, lhDesc: abMin_lhDesc,
+             descendingIntervals: melodicMinorDescIntervals),
+
+    ScaleDef(key: .ebMelodicMinor,
+             lhRoot: 51, rhRoot: 63, intervals: melodicMinorAscIntervals,
+             rhAsc: ebMaj_rhAsc,  lhAsc: ebMin_lhAsc,
+             rhDesc: ebMaj_rhDesc, lhDesc: ebMin_lhDesc,
+             descendingIntervals: melodicMinorDescIntervals),
+
+    ScaleDef(key: .bbMelodicMinor,
+             lhRoot: 46, rhRoot: 58, intervals: melodicMinorAscIntervals,
+             rhAsc: bbMaj_rhAsc,  lhAsc: bbMin_lhAsc,
+             rhDesc: bbMaj_rhDesc, lhDesc: bbMin_lhDesc,
+             descendingIntervals: melodicMinorDescIntervals),
+
+    ScaleDef(key: .fMelodicMinor,
+             lhRoot: 53, rhRoot: 65, intervals: melodicMinorAscIntervals,
+             rhAsc: g2_rhAsc,  lhAsc: g2_lhAsc,
+             rhDesc: g2_rhDesc, lhDesc: g2_lhDesc,
+             descendingIntervals: melodicMinorDescIntervals),
 ]
 
 // MARK: - Index
@@ -285,8 +454,18 @@ public enum ScaleLibrary {
         let d = def(for: key)
         let lhAsc = midiNotes(root: d.lhRoot, intervals: d.intervals)
         let rhAsc = midiNotes(root: d.rhRoot, intervals: d.intervals)
-        let lhDesc = Array(lhAsc.reversed().dropFirst())
-        let rhDesc = Array(rhAsc.reversed().dropFirst())
+        // Descending leg: melodic minor supplies explicit descending offsets
+        // (its natural-minor form); every other scale mirrors the ascending
+        // notes (apex dropped so it is not repeated).
+        let lhDesc: [Int]
+        let rhDesc: [Int]
+        if let desc = d.descendingIntervals {
+            lhDesc = desc.map { d.lhRoot + $0 }
+            rhDesc = desc.map { d.rhRoot + $0 }
+        } else {
+            lhDesc = Array(lhAsc.reversed().dropFirst())
+            rhDesc = Array(rhAsc.reversed().dropFirst())
+        }
 
         precondition(d.rhAsc.count  == rhAsc.count)
         precondition(d.lhDesc.count == lhDesc.count)
@@ -314,16 +493,25 @@ public enum ScaleLibrary {
         let d = def(for: key)
         let lhAsc = midiNotes(root: d.lhRoot, intervals: d.intervals)
         let rhAsc = midiNotes(root: d.rhRoot, intervals: d.intervals)
-        // Full descent from apex → root (15 notes, apex not dropped).
-        let lhDesc = lhAsc.reversed()
-        let rhDesc = rhAsc.reversed()
+        // Full descent from apex → root (15 notes, apex not dropped). Melodic
+        // minor descends as the natural minor: apex followed by the explicit
+        // descending offsets; every other scale mirrors the ascending notes.
+        let lhDesc: [Int]
+        let rhDesc: [Int]
+        if let desc = d.descendingIntervals {
+            lhDesc = [d.lhRoot + d.intervals.last!] + desc.map { d.lhRoot + $0 }
+            rhDesc = [d.rhRoot + d.intervals.last!] + desc.map { d.rhRoot + $0 }
+        } else {
+            lhDesc = Array(lhAsc.reversed())
+            rhDesc = Array(rhAsc.reversed())
+        }
         // Fingering: [apex_asc_finger] + standard 14-note descending array.
         let lhFingers = [d.lhAsc.last!] + d.lhDesc   // 1 + 14 = 15
         let rhFingers = [d.rhAsc.last!] + d.rhDesc   // 1 + 14 = 15
         let steps: [ScaleStep] = (0..<15).map { i in
-            ScaleStep(leftNote: lhDesc[lhDesc.index(lhDesc.startIndex, offsetBy: i)],
+            ScaleStep(leftNote: lhDesc[i],
                       leftFinger: lhFingers[i],
-                      rightNote: rhDesc[rhDesc.index(rhDesc.startIndex, offsetBy: i)],
+                      rightNote: rhDesc[i],
                       rightFinger: rhFingers[i],
                       waitForBothHands: true)
         }

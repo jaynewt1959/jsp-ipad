@@ -2,6 +2,7 @@ import { useEffect, useRef, useCallback } from "react";
 import type { Command, Snapshot } from "../types";
 import type { ConnectionStatus } from "../api/ws";
 import type { CycleOrder } from "../data/cycleOrders";
+import type { MinorVariant } from "../data/scales";
 
 export type PlayMode = "once" | "loop" | "cycle";
 
@@ -15,6 +16,7 @@ interface SavedSettings {
   metronomeBpm: number;
   playMode: PlayMode;
   cycleOrder: CycleOrder;
+  minorVariant: MinorVariant;
 }
 
 /** Legacy shape — only used for one-time migration. */
@@ -57,6 +59,7 @@ export function usePersistedSettings(
   snapshot: Snapshot | null,
   setPlayMode: (v: PlayMode) => void,
   setCycleOrder: (v: CycleOrder) => void,
+  setMinorVariant: (v: MinorVariant) => void,
 ) {
   const restoredRef = useRef(false);
 
@@ -91,7 +94,8 @@ export function usePersistedSettings(
     }
     setPlayMode(saved.playMode ?? "once");
     if (saved.cycleOrder) setCycleOrder(saved.cycleOrder);
-  }, [connection.kind, snapshot, rawSend, setPlayMode, setCycleOrder]);
+    if (saved.minorVariant) setMinorVariant(saved.minorVariant);
+  }, [connection.kind, snapshot, rawSend, setPlayMode, setCycleOrder, setMinorVariant]);
 
   // Wrap send to intercept setting commands and persist them.
   const send = useCallback(
@@ -107,6 +111,7 @@ export function usePersistedSettings(
         metronomeBpm: 80,
         playMode: "once",
         cycleOrder: "random",
+        minorVariant: "natural",
       };
 
       switch (cmd.type) {
@@ -150,7 +155,16 @@ export function usePersistedSettings(
     [setCycleOrder],
   );
 
-  return { send, persistPlayMode, persistCycleOrder };
+  const persistMinorVariant = useCallback(
+    (variant: MinorVariant) => {
+      setMinorVariant(variant);
+      const prev = load();
+      if (prev) save({ ...prev, minorVariant: variant });
+    },
+    [setMinorVariant],
+  );
+
+  return { send, persistPlayMode, persistCycleOrder, persistMinorVariant };
 }
 
 /** Read saved playMode for initial state (before hook mounts). */
@@ -161,4 +175,8 @@ export function loadSavedPlayMode(): PlayMode {
 
 export function loadSavedCycleOrder(): CycleOrder {
   return load()?.cycleOrder ?? "random";
+}
+
+export function loadSavedMinorVariant(): MinorVariant {
+  return load()?.minorVariant ?? "natural";
 }

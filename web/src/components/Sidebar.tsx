@@ -2,7 +2,7 @@ import type { Command, HandMode, Snapshot } from "../types";
 import type { ConnectionStatus } from "../api/ws";
 import type { PlayMode } from "../hooks/usePersistedSettings";
 import type { CycleOrder } from "../data/cycleOrders";
-import { KEY_SPECS } from "../data/scales";
+import { KEY_SPECS, specForKey, minorKeyFor, minorVariantOf, isMinorKey, type MinorVariant } from "../data/scales";
 
 const BPM_PRESETS = [60, 80, 100, 120] as const;
 
@@ -16,6 +16,9 @@ interface Props {
   onSetPlayMode: (mode: PlayMode) => void;
   cycleOrder: CycleOrder;
   onSetCycleOrder: (order: CycleOrder) => void;
+  /** Active minor sub-type and its setter (persisted in App). */
+  minorVariant: MinorVariant;
+  onSetMinorVariant: (v: MinorVariant) => void;
   /** Restart immediately (does not change play mode). */
   onReset: () => void;
 }
@@ -24,14 +27,19 @@ export function Sidebar({
   snapshot, connection, send, beatPhase,
   playMode, onSetPlayMode,
   cycleOrder, onSetCycleOrder,
+  minorVariant, onSetMinorVariant,
   onReset,
 }: Props) {
   const lesson = snapshot?.lesson;
   const midi = snapshot?.midi;
   const metro = snapshot?.metronome ?? { enabled: false, bpm: 80 };
 
-  const currentKey = lesson?.key ?? "cMajor";
-  const isMinor    = currentKey.includes("Natural");
+  const currentKey   = lesson?.key ?? "cMajor";
+  const isMinor      = isMinorKey(currentKey);
+  // Highlight the variant of the current key when on a minor; otherwise the
+  // remembered (persisted) sub-type so toggling Major↔Minor returns to it.
+  const activeVariant = minorVariantOf(currentKey) ?? minorVariant;
+  const activeSpec    = specForKey(currentKey);
 
   return (
     <aside className="sidebar">
@@ -126,8 +134,8 @@ export function Sidebar({
           <button
             className={`btn btn--style ${!isMinor ? "btn--style-active" : ""}`}
             onClick={() => {
-              const spec = KEY_SPECS.find(s => s.majorKey === currentKey || s.minorKey === currentKey);
-              send({ type: "setScale", scaleKey: spec?.majorKey ?? "cMajor" });
+              const spec = specForKey(currentKey);
+              send({ type: "setScale", scaleKey: spec.majorKey });
             }}
             disabled={connection.kind !== "open"}
           >
@@ -136,18 +144,38 @@ export function Sidebar({
           <button
             className={`btn btn--style ${isMinor ? "btn--style-active" : ""}`}
             onClick={() => {
-              const spec = KEY_SPECS.find(s => s.majorKey === currentKey || s.minorKey === currentKey);
-              send({ type: "setScale", scaleKey: spec?.minorKey ?? "cNaturalMinor" });
+              const spec = specForKey(currentKey);
+              send({ type: "setScale", scaleKey: minorKeyFor(spec, minorVariant) });
             }}
             disabled={connection.kind !== "open"}
           >
-            Nat. Minor
+            Minor
           </button>
+        </div>
+        <div className="sidebar__practice-style sidebar__minor-variant">
+          {([
+            { v: "natural"  as MinorVariant, label: "Natural" },
+            { v: "harmonic" as MinorVariant, label: "Harmonic" },
+            { v: "melodic"  as MinorVariant, label: "Melodic" },
+          ]).map(({ v, label }) => (
+            <button
+              key={v}
+              className={`btn btn--style ${isMinor && activeVariant === v ? "btn--style-active" : ""}`}
+              onClick={() => {
+                onSetMinorVariant(v);
+                const spec = specForKey(currentKey);
+                send({ type: "setScale", scaleKey: minorKeyFor(spec, v) });
+              }}
+              disabled={connection.kind !== "open" || !isMinor}
+            >
+              {label}
+            </button>
+          ))}
         </div>
         <div className="sidebar__key-grid">
           {KEY_SPECS.map(spec => {
-            const isActive = currentKey === spec.majorKey || currentKey === spec.minorKey;
-            const targetKey = isMinor ? spec.minorKey : spec.majorKey;
+            const isActive = spec.label === activeSpec.label;
+            const targetKey = isMinor ? minorKeyFor(spec, activeVariant) : spec.majorKey;
             return (
               <button
                 key={spec.label}
