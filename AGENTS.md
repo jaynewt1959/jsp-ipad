@@ -37,6 +37,8 @@ Port **8089** is hardcoded in `EngineHost.swift`; server binds to `127.0.0.1`
 | `web/src/data/cycleOrders.ts` | Builds ordered scale pools for cyclic practice (random, chromatic, fifths) |
 | `web/src/hooks/usePersistedSettings.ts` | Persists sidebar settings (incl. playMode, cycleOrder, minorVariant) to localStorage |
 | `web/src/components/PracticePanel.tsx` | Main practice area: step label, keyboard strip, score, feedback, timing stats |
+| `web/src/components/KeyboardBar.tsx` | Device/range strip: calibration prompts, source picker, Recalibrate |
+| `web/src/util/availability.ts` | Which scale keys fit the calibrated keyboard range per hand mode |
 | `web/src/components/KeyboardStrip.tsx` | Piano keyboard display highlighting next expected note(s) |
 | `web/src/components/score/ScaleScoreView.tsx` | Staff notation view of the current scale |
 
@@ -120,14 +122,57 @@ There is no `docs/protocol.md` in this repo; refer to `../jsp/docs/protocol.md`
 if you need the field reference. Do not diverge from the Mac wire format
 without a deliberate decision.
 
-**Deliberate divergence**: `LessonState.fixedVelocity: Bool` is iPad-only
-(not in the Mac `jsp` wire format). True when every note-on of the current
-run carried an identical velocity (≥8 samples) — i.e. the keyboard has no
-touch response, so `velocityCV` is suppressed (null), evenness drops out of
-the stats/composite score, and the UI shows a "doesn't report dynamics"
-notice. Detection is stateless per run (reset on every rewind); see
-`SessionCoordinator.trackVelocity` / `fixedVelocityDetected`. Port to Mac
-`jsp` later if desired.
+**Deliberate divergences** (iPad-only, not in the Mac `jsp` wire format;
+port to Mac later if desired):
+
+1. `LessonState.fixedVelocity: Bool` — true when every note-on of the
+   current run carried an identical velocity (≥8 samples), i.e. the
+   keyboard has no touch response. `velocityCV` is suppressed (null),
+   evenness drops out of the stats/composite score, and the UI shows a
+   "doesn't report dynamics" notice. Detection is stateless per run
+   (reset on every rewind); see `SessionCoordinator.trackVelocity` /
+   `fixedVelocityDetected`.
+2. `MidiState.activeSource: String?` — display name of the MIDI source
+   whose events drive the lesson. Events from other connected sources
+   are ignored.
+3. `Snapshot.keyboard: KeyboardState` — `{ rangeLow, rangeHigh,
+   calibration }`; null range = unknown/full-size.
+4. Commands `setActiveSource` (payload `sourceName`), `startCalibration`,
+   `cancelCalibration`, `skipCalibration`.
+
+## Keyboard range & calibration
+
+MIDI cannot report a keyboard's key count, so the app learns each
+device's range with a 2-press calibration (lowest key, then highest),
+triggered automatically the first time an unrecognized device becomes
+active. Ranges persist in `UserDefaults` under `keyboardRanges`, keyed
+by CoreMIDI display name (`KeyboardProfileStore` in
+`SessionCoordinator.swift`); "Skip" stores the full range `[0, 127]` so
+the device is never re-prompted. `lastActiveSource` remembers the
+user's pick when several sources are connected.
+
+Degradation rules (all 48 scales are two octaves with identical roots
+per key, so availability depends only on hand mode + range — see
+`web/src/util/availability.ts`):
+
+- Key-grid / hand-mode buttons that don't fit get `.btn--unavailable`
+  (dimmed + line-through — deliberately not red, which would clash with
+  the Right Hand button) and are disabled.
+- **Cycle mode is simply unavailable** unless all 12 keys fit in the
+  current hand mode — a documented limitation; there is no partial
+  cycle pool. App.tsx coerces a persisted `cycle` playMode back to
+  `once` when unavailable.
+- If the current selection no longer fits (calibration or hand-mode
+  change), the server switches to the chromatically nearest fitting key
+  of the same scale type and explains in the feedback line
+  (`SessionCoordinator.enforceFit`).
+- The `KeyboardBar` (bottom of `PracticePanel`) shows the active
+  device, its range, calibration prompts, a Recalibrate button, and a
+  source picker when more than one MIDI source is connected.
+
+MIDI events are tagged with their source display name
+(`SourcedNoteEvent` in `MidiInput.swift`, via `MIDIPortConnectSource`
+connRefCon).
 
 ## web/dist bundle — how it gets into the app
 

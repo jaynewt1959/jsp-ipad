@@ -27,6 +27,7 @@ public struct Snapshot: Encodable, Sendable {
     public let elapsedSec: Double?
     public let serverTimeMs: Int64
     public let metronome: MetronomeState
+    public let keyboard: KeyboardState
 
     public init(
         midi: MidiState,
@@ -36,7 +37,8 @@ public struct Snapshot: Encodable, Sendable {
         mistakesByStep: [String: Int],
         elapsedSec: Double?,
         serverTimeMs: Int64,
-        metronome: MetronomeState
+        metronome: MetronomeState,
+        keyboard: KeyboardState
     ) {
         self.midi = midi
         self.lesson = lesson
@@ -46,12 +48,17 @@ public struct Snapshot: Encodable, Sendable {
         self.elapsedSec = elapsedSec
         self.serverTimeMs = serverTimeMs
         self.metronome = metronome
+        self.keyboard = keyboard
     }
 }
 
 public struct MidiState: Encodable, Sendable {
     public let running: Bool
     public let sources: [String]
+    /// Display name of the source whose events drive the lesson, or
+    /// nil when no source is connected. iPad-only field (not in the
+    /// Mac `jsp` wire format).
+    public let activeSource: String?
 }
 
 public struct LessonState: Encodable, Sendable {
@@ -103,6 +110,17 @@ public struct LessonState: Encodable, Sendable {
 public struct MetronomeState: Encodable, Sendable {
     public let enabled: Bool
     public let bpm: Int
+}
+
+/// Detected physical key range and calibration status of the active
+/// keyboard. iPad-only (not in the Mac `jsp` wire format).
+public struct KeyboardState: Encodable, Sendable {
+    /// Lowest playable MIDI note, or nil when unknown / full-size.
+    public let rangeLow: Int?
+    /// Highest playable MIDI note, or nil when unknown / full-size.
+    public let rangeHigh: Int?
+    /// "idle" | "awaitingLow" | "awaitingHigh"
+    public let calibration: String
 }
 
 public struct StepState: Encodable, Sendable {
@@ -162,6 +180,8 @@ public struct InboundCommand: Decodable, Sendable {
     /// log (manual Reset). Loop restarts omit this so Analyze can still
     /// inspect the completed run.
     public let clearHistory: Bool?
+    /// Payload for `setActiveSource` — a MIDI source display name.
+    public let sourceName: String?
 }
 
 public enum CommandType: String {
@@ -173,6 +193,10 @@ public enum CommandType: String {
     case setMetronome
     case setScale
     case setDirection
+    case setActiveSource
+    case startCalibration
+    case cancelCalibration
+    case skipCalibration
     case ping
 }
 

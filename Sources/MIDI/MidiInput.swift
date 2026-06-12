@@ -24,6 +24,19 @@ import Foundation
 import CoreMIDI
 #endif
 
+/// A `NoteEvent` tagged with the display name of the CoreMIDI source
+/// that produced it, so the coordinator can filter to the active
+/// keyboard and key per-device range calibration by name.
+public struct SourcedNoteEvent: Equatable {
+    public let event: NoteEvent
+    public let sourceName: String
+
+    public init(event: NoteEvent, sourceName: String) {
+        self.event = event
+        self.sourceName = sourceName
+    }
+}
+
 public final class MidiInput: @unchecked Sendable {
 
     // MARK: - State (lock-protected)
@@ -34,9 +47,13 @@ public final class MidiInput: @unchecked Sendable {
     private var client: MIDIClientRef = 0
     private var inputPort: MIDIPortRef = 0
     private var connectedSources: Set<MIDIEndpointRef> = []
+    /// Display names captured at connect time, used to tag events.
+    private var sourceNamesByEndpoint: [MIDIEndpointRef: String] = [:]
     #endif
 
-    private var continuation: AsyncStream<NoteEvent>.Continuation?
+    private var continuation: AsyncStream<SourcedNoteEvent>.Continuation?
+    /// Invoked (off-lock) whenever the set of connected sources changes.
+    private var sourcesChangedHandler: (@Sendable () -> Void)?
     private var running: Bool = false
     private var lastError: String?
 
@@ -69,11 +86,18 @@ public final class MidiInput: @unchecked Sendable {
         #endif
     }
 
+    /// Register a callback fired whenever sources attach/detach
+    /// (hot-plug). Invoked outside the internal lock.
+    public func setSourcesChangedHandler(_ handler: @escaping @Sendable () -> Void) {
+        lock.lock(); defer { lock.unlock() }
+        sourcesChangedHandler = handler
+    }
+
     /// Returns an AsyncStream of note events. Only one active stream
     /// is supported in v0; calling `events()` again replaces the
     /// continuation (the previous stream finishes).
-    public func events() -> AsyncStream<NoteEvent> {
-        AsyncStream<NoteEvent> { newContinuation in
+    public func events() -> AsyncStream<SourcedNoteEvent> {
+        AsyncStream<SourcedNoteEvent> { newContinuation in
             self.lock.lock()
             self.continuation?.finish()
             self.continuation = newContinuation
@@ -120,8 +144,8 @@ public final class MidiInput: @unchecked Sendable {
             portName,
             ._1_0,
             &newPort
-        ) { [weak self] eventListPtr, _ in
-            self?.dispatchEventList(eventListPtr)
+        ) { [weak self] eventListPtr, srcConnRefCon in
+            self?.dispatchEventList(eventListPtr, refCon: srcConnRefCon)
         }
         guard portStatus == noErr else {
             recordError("MIDIInputPortCreateWithProtocol failed: \(portStatus)")
@@ -152,6 +176,7 @@ public final class MidiInput: @unchecked Sendable {
         let cli = client
         let toDisconnect = connectedSources
         connectedSources.removeAll()
+        sourceNamesByEndpoint.removeAll()
         inputPort = 0
         client = 0
         running = false
@@ -172,6 +197,7 @@ public final class MidiInput: @unchecked Sendable {
         lock.lock()
         guard running else { lock.unlock(); return }
         let port = inputPort
+        let before = connectedSources
         var live: Set<MIDIEndpointRef> = []
         for i in 0..<MIDIGetNumberOfSources() {
             let s = MIDIGetSource(i); if s != 0 { live.insert(s) }
@@ -180,16 +206,25 @@ public final class MidiInput: @unchecked Sendable {
         for s in toRemove {
             MIDIPortDisconnectSource(port, s)
             connectedSources.remove(s)
+            sourceNamesByEndpoint.removeValue(forKey: s)
         }
         for s in live where !connectedSources.contains(s) {
-            if MIDIPortConnectSource(port, s, nil) == noErr {
+            // Pass the endpoint ref as connRefCon so the receive block
+            // can attribute incoming events to their source.
+            let refCon = UnsafeMutableRawPointer(bitPattern: UInt(s))
+            if MIDIPortConnectSource(port, s, refCon) == noErr {
                 connectedSources.insert(s)
+                sourceNamesByEndpoint[s] = displayName(of: s)
             }
         }
+        let changed = connectedSources != before
+        let handler = sourcesChangedHandler
         lock.unlock()
+        if changed { handler?() }
     }
 
-    private func dispatchEventList(_ listPtr: UnsafePointer<MIDIEventList>) {
+    private func dispatchEventList(_ listPtr: UnsafePointer<MIDIEventList>, refCon: UnsafeMutableRawPointer?) {
+        let sourceName = sourceName(forRefCon: refCon)
         // CoreMIDI hands us an `UnsafePointer<MIDIEventList>` whose
         // `pointee` is read-only, but the underlying storage is in
         // fact a stable buffer we may iterate. Reinterpret as mutable
@@ -200,7 +235,7 @@ public final class MidiInput: @unchecked Sendable {
         withUnsafePointer(to: &mutListPtr.pointee.packet) { firstPacketPtr in
             var packetPtr: UnsafePointer<MIDIEventPacket> = firstPacketPtr
             for _ in 0..<count {
-                parsePacket(packetPtr.pointee)
+                parsePacket(packetPtr.pointee, sourceName: sourceName)
                 packetPtr = UnsafePointer(
                     MIDIEventPacketNext(UnsafeMutablePointer(mutating: packetPtr))
                 )
@@ -208,7 +243,15 @@ public final class MidiInput: @unchecked Sendable {
         }
     }
 
-    private func parsePacket(_ packet: MIDIEventPacket) {
+    /// Recover the source endpoint from the connRefCon registered in
+    /// `refreshSources()` and look up its display name.
+    private func sourceName(forRefCon refCon: UnsafeMutableRawPointer?) -> String {
+        let endpoint = MIDIEndpointRef(truncatingIfNeeded: UInt(bitPattern: refCon))
+        lock.lock(); defer { lock.unlock() }
+        return sourceNamesByEndpoint[endpoint] ?? "unknown"
+    }
+
+    private func parsePacket(_ packet: MIDIEventPacket, sourceName: String) {
         // Each MIDI 1.0 channel-voice UMP message is one 32-bit word.
         let words = withUnsafeBytes(of: packet.words) { rawBuffer -> [UInt32] in
             let buffer = rawBuffer.bindMemory(to: UInt32.self)
@@ -226,11 +269,11 @@ public final class MidiInput: @unchecked Sendable {
             let velocity = Int(byte3)
             switch status {
             case 0x90 where velocity > 0:
-                emit(NoteEvent(note: note, velocity: velocity, isOn: true,  timestampNs: packet.timeStamp))
+                emit(NoteEvent(note: note, velocity: velocity, isOn: true,  timestampNs: packet.timeStamp), from: sourceName)
             case 0x90: // note-on with velocity 0 == note-off
-                emit(NoteEvent(note: note, velocity: 0, isOn: false, timestampNs: packet.timeStamp))
+                emit(NoteEvent(note: note, velocity: 0, isOn: false, timestampNs: packet.timeStamp), from: sourceName)
             case 0x80:
-                emit(NoteEvent(note: note, velocity: velocity, isOn: false, timestampNs: packet.timeStamp))
+                emit(NoteEvent(note: note, velocity: velocity, isOn: false, timestampNs: packet.timeStamp), from: sourceName)
             default:
                 continue
             }
@@ -247,12 +290,12 @@ public final class MidiInput: @unchecked Sendable {
 
     // MARK: - Helpers
 
-    private func emit(_ event: NoteEvent) {
-        let cont: AsyncStream<NoteEvent>.Continuation? = {
+    private func emit(_ event: NoteEvent, from sourceName: String) {
+        let cont: AsyncStream<SourcedNoteEvent>.Continuation? = {
             lock.lock(); defer { lock.unlock() }
             return continuation
         }()
-        cont?.yield(event)
+        cont?.yield(SourcedNoteEvent(event: event, sourceName: sourceName))
     }
 
     private func recordError(_ message: String) {

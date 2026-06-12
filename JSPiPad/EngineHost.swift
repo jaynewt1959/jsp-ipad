@@ -74,6 +74,13 @@ actor EngineHost {
                             if let dir = cmd.direction {
                                 await coordinator.handleSetDirection(dir)
                             }
+                        case .setActiveSource:
+                            if let name = cmd.sourceName {
+                                await coordinator.handleSetActiveSource(name)
+                            }
+                        case .startCalibration:  await coordinator.handleStartCalibration()
+                        case .cancelCalibration: await coordinator.handleCancelCalibration()
+                        case .skipCalibration:   await coordinator.handleSkipCalibration()
                         case .ping, .none: break
                         }
                     }

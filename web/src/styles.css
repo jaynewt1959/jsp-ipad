@@ -517,6 +517,49 @@ body {
   min-height: 0 !important;
 }
 
+/* ===== Unavailable options (keyboard range degradation) ================== */
+
+/* Options the connected keyboard physically can't play. Dimmed and
+   struck through — deliberately NOT red, to avoid clashing with the
+   Right Hand button's red accent. */
+.btn--unavailable,
+.btn--unavailable:disabled {
+  opacity: 0.35;
+  filter: saturate(0.2);
+  text-decoration: line-through;
+}
+
+/* ===== Keyboard bar (active device, range, calibration) ================== */
+
+.keyboard-bar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  font-size: 12px;
+  color: var(--fg-soft);
+}
+
+.keyboard-bar__prompt {
+  font-weight: 600;
+  color: var(--amber);
+}
+
+.keyboard-bar__range {
+  opacity: 0.75;
+}
+
+.btn--bar {
+  font-size: 11px;
+  padding: 4px 10px;
+  border-radius: 6px;
+}
+
+.btn--bar-active {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
 /* ===== Timing badge on the score ======================================== */
 
 .timing-badge {

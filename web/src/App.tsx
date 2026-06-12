@@ -10,6 +10,10 @@ import type { PlayMode } from "./hooks/usePersistedSettings";
 import type { CycleOrder } from "./data/cycleOrders";
 import { buildCyclePool } from "./data/cycleOrders";
 import { minorVariantOf, isMinorKey, type MinorVariant } from "./data/scales";
+import {
+  rangeFromKeyboard, availableKeyLabels, modeHasAnyKey, allKeysAvailable,
+} from "./util/availability";
+import type { HandMode } from "./types";
 import { Sidebar } from "./components/Sidebar";
 import { PracticePanel } from "./components/PracticePanel";
 import { DebugPanel } from "./components/DebugPanel";
@@ -139,6 +143,24 @@ export default function App() {
     send({ type: "restartLesson", clearHistory: true });
   };
 
+  // ── Keyboard range availability (degrade UI on small keyboards) ───────
+  const keyboardRange = rangeFromKeyboard(snapshot?.keyboard);
+  const handsMode = (snapshot?.lesson.handsMode ?? "together") as HandMode;
+  const availableKeys = availableKeyLabels(handsMode, keyboardRange);
+  const modeAvailability: Record<HandMode, boolean> = {
+    leftOnly:  modeHasAnyKey("leftOnly",  keyboardRange),
+    rightOnly: modeHasAnyKey("rightOnly", keyboardRange),
+    together:  modeHasAnyKey("together",  keyboardRange),
+  };
+  const cycleAvailable = allKeysAvailable(handsMode, keyboardRange);
+
+  // Cycle mode is unavailable on limited-range keyboards; fall back to Once.
+  useEffect(() => {
+    if (playMode === "cycle" && !cycleAvailable) {
+      persistPlayMode("once");
+    }
+  }, [playMode, cycleAvailable, persistPlayMode]);
+
   const metro = snapshot?.metronome ?? { enabled: false, bpm: 80 };
   // lessonActive already computed above (used for inactivity timer too).
   // Clock skew: positive when Mac is ahead of iPad.
@@ -166,8 +188,11 @@ export default function App() {
         minorVariant={minorVariant}
         onSetMinorVariant={persistMinorVariant}
         onReset={handleReset}
+        availableKeys={availableKeys}
+        modeAvailability={modeAvailability}
+        cycleAvailable={cycleAvailable}
       />
-      <PracticePanel snapshot={snapshot} timing={timing} timingStats={timingStats} playMode={playMode} loopCountdown={loopCountdown} manualResetSeq={manualResetSeq} />
+      <PracticePanel snapshot={snapshot} send={send} timing={timing} timingStats={timingStats} playMode={playMode} loopCountdown={loopCountdown} manualResetSeq={manualResetSeq} />
       {debugLog && (
         <DebugPanel log={debugLog} onClose={clearDebugLog} />
       )}

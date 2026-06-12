@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import type { Snapshot } from "../types";
+import type { Command, Snapshot } from "../types";
 import type { TimingResult, TimingStats } from "../hooks/useTiming";
 import type { PlayMode } from "../hooks/usePersistedSettings";
 import { getScaleDescriptor } from "../data/scales";
@@ -7,10 +7,12 @@ import { noteName, FLAT_KEY_SIGNATURES } from "../util/noteName";
 import { compositeScore } from "../util/compositeScore";
 import { HandStatusBadge } from "./HandStatusBadge";
 import { KeyboardStrip } from "./KeyboardStrip";
+import { KeyboardBar } from "./KeyboardBar";
 import { ScaleScoreView } from "./score/ScaleScoreView";
 
 interface Props {
   snapshot: Snapshot | null;
+  send: (cmd: Command) => void;
   timing: TimingResult | null;
   timingStats: TimingStats;
   playMode: PlayMode;
@@ -21,7 +23,7 @@ interface Props {
 
 // Keyboard range is computed dynamically from the active scale (see below).
 
-export function PracticePanel({ snapshot, timing, timingStats, playMode, loopCountdown, manualResetSeq }: Props) {
+export function PracticePanel({ snapshot, send, timing, timingStats, playMode, loopCountdown, manualResetSeq }: Props) {
   const lesson = snapshot?.lesson;
   const step = snapshot?.lesson.currentStep ?? null;
   const handStatus = snapshot?.handStatus;
@@ -225,6 +227,8 @@ export function PracticePanel({ snapshot, timing, timingStats, playMode, loopCou
           </p>
         )}
       </section>
+
+      <KeyboardBar snapshot={snapshot} send={send} />
     </main>
   );
 }

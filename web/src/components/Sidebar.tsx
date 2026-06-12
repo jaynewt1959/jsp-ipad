@@ -21,6 +21,12 @@ interface Props {
   onSetMinorVariant: (v: MinorVariant) => void;
   /** Restart immediately (does not change play mode). */
   onReset: () => void;
+  /** Key labels playable on the active keyboard in the current hand mode. */
+  availableKeys: Set<string>;
+  /** Whether each hand mode has at least one playable key. */
+  modeAvailability: Record<HandMode, boolean>;
+  /** Cycle needs all 12 keys playable in the current hand mode. */
+  cycleAvailable: boolean;
 }
 
 export function Sidebar({
@@ -29,6 +35,7 @@ export function Sidebar({
   cycleOrder, onSetCycleOrder,
   minorVariant, onSetMinorVariant,
   onReset,
+  availableKeys, modeAvailability, cycleAvailable,
 }: Props) {
   const lesson = snapshot?.lesson;
   const midi = snapshot?.midi;
@@ -118,9 +125,10 @@ export function Sidebar({
                 "btn", "btn--hand",
                 `btn--hand-${mode}`,
                 lesson?.handsMode === mode ? "btn--hand-active" : "",
+                !modeAvailability[mode] ? "btn--unavailable" : "",
               ].join(" ")}
               onClick={() => send({ type: "setHandMode", handMode: mode })}
-              disabled={connection.kind !== "open"}
+              disabled={connection.kind !== "open" || !modeAvailability[mode]}
             >
               {label}
             </button>
@@ -176,12 +184,13 @@ export function Sidebar({
           {KEY_SPECS.map(spec => {
             const isActive = spec.label === activeSpec.label;
             const targetKey = isMinor ? minorKeyFor(spec, activeVariant) : spec.majorKey;
+            const available = availableKeys.has(spec.label);
             return (
               <button
                 key={spec.label}
-                className={`btn btn--key ${isActive ? "btn--key-active" : ""}`}
+                className={`btn btn--key ${isActive ? "btn--key-active" : ""} ${!available ? "btn--unavailable" : ""}`}
                 onClick={() => send({ type: "setScale", scaleKey: targetKey })}
-                disabled={connection.kind !== "open"}
+                disabled={connection.kind !== "open" || !available}
               >
                 {spec.label}
               </button>
@@ -214,16 +223,19 @@ export function Sidebar({
         <h2 className="sidebar__section-title">Controls</h2>
         <div className="sidebar__buttons">
           <div className="sidebar__direction">
-            {(["once", "loop", "cycle"] as const).map(mode => (
-              <button
-                key={mode}
-                className={`btn btn--style ${playMode === mode ? "btn--style-active" : ""}`}
-                onClick={() => { onSetPlayMode(mode); send({ type: "restartLesson" }); }}
-                disabled={connection.kind !== "open"}
-              >
-                {mode === "once" ? "Once" : mode === "loop" ? "Loop" : "Cycle"}
-              </button>
-            ))}
+            {(["once", "loop", "cycle"] as const).map(mode => {
+              const unavailable = mode === "cycle" && !cycleAvailable;
+              return (
+                <button
+                  key={mode}
+                  className={`btn btn--style ${playMode === mode ? "btn--style-active" : ""} ${unavailable ? "btn--unavailable" : ""}`}
+                  onClick={() => { onSetPlayMode(mode); send({ type: "restartLesson" }); }}
+                  disabled={connection.kind !== "open" || unavailable}
+                >
+                  {mode === "once" ? "Once" : mode === "loop" ? "Loop" : "Cycle"}
+                </button>
+              );
+            })}
           </div>
 
           <div className="sidebar__practice-style">

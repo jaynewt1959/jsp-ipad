@@ -20,6 +20,19 @@ export interface ScaleStep {
 export interface MidiState {
   running: boolean;
   sources: string[];
+  /** Display name of the source whose events drive the lesson, or null when
+   *  no source is connected. iPad-only field (not in Mac jsp). */
+  activeSource: string | null;
+}
+
+export type CalibrationPhase = "idle" | "awaitingLow" | "awaitingHigh";
+
+/** Detected physical key range and calibration status of the active keyboard.
+ *  iPad-only (not in Mac jsp). null range = unknown / full-size. */
+export interface KeyboardState {
+  rangeLow: number | null;
+  rangeHigh: number | null;
+  calibration: CalibrationPhase;
 }
 
 export interface LessonState {
@@ -75,6 +88,7 @@ export interface Snapshot {
   elapsedSec: number | null;
   serverTimeMs: number;
   metronome: MetronomeState;
+  keyboard: KeyboardState;
 }
 
 export type HandMode = "together" | "leftOnly" | "rightOnly";
@@ -88,6 +102,10 @@ export type Command =
   | { type: "setMetronome"; metronomeEnabled: boolean; metronomeBpm: number }
   | { type: "setScale"; scaleKey: string }
   | { type: "setDirection"; direction: "ascending" | "descending" | "ascendingDescending" }
+  | { type: "setActiveSource"; sourceName: string }
+  | { type: "startCalibration" }
+  | { type: "cancelCalibration" }
+  | { type: "skipCalibration" }
   | { type: "ping" };
 
 // ---------------------------------------------------------------------------

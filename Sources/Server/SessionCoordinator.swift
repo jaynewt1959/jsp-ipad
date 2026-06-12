@@ -95,6 +95,25 @@ actor SessionCoordinator {
     /// Always on; reset at each lesson rewind.
     private var eventLog = EventLog()
 
+    // MARK: - Keyboard profiles & calibration
+
+    /// Phases of the 2-press range calibration.
+    private enum CalibrationPhase: String {
+        case idle
+        case awaitingLow
+        case awaitingHigh
+    }
+
+    private let profiles = KeyboardProfileStore()
+    /// Display name of the MIDI source whose events drive the lesson.
+    /// Events from other connected sources are ignored.
+    private var activeSource: String? = nil
+    /// Physical range of the active keyboard. nil = unknown or
+    /// full-size (no restriction).
+    private var activeRange: KeyboardRange? = nil
+    private var calibration: CalibrationPhase = .idle
+    private var calibrationLow: Int? = nil
+
     // MARK: - Init
 
     init(hub: WebSocketHub, midi: MidiInput) {
@@ -110,9 +129,57 @@ actor SessionCoordinator {
     /// Start CoreMIDI and (re)start the lesson. Idempotent w.r.t. the
     /// MIDI side; rewinds the lesson regardless.
     func handleStart() async {
+        midi.setSourcesChangedHandler { [weak self] in
+            guard let self else { return }
+            Task { await self.handleSourcesChanged() }
+        }
         midi.start()
         beginConsumingMidiIfNeeded()
         rewindLesson()
+        reconcileActiveSource()
+        await broadcast()
+    }
+
+    /// CoreMIDI sources appeared or disappeared (hot-plug).
+    func handleSourcesChanged() async {
+        reconcileActiveSource()
+        await broadcast()
+    }
+
+    /// Switch which connected MIDI source drives the lesson.
+    func handleSetActiveSource(_ name: String) async {
+        guard midi.currentSourceNames().contains(name), name != activeSource else { return }
+        activeSource = name
+        profiles.setLastActiveSource(name)
+        rewindLesson()
+        applyProfileForActiveSource(deviceChanged: true)
+        await broadcast()
+    }
+
+    /// Begin (or redo) the 2-press range calibration for the active device.
+    func handleStartCalibration() async {
+        guard activeSource != nil, midi.isRunning() else { return }
+        calibration = .awaitingLow
+        calibrationLow = nil
+        await broadcast()
+    }
+
+    /// Abort calibration, keeping whatever profile was already stored.
+    func handleCancelCalibration() async {
+        calibration = .idle
+        calibrationLow = nil
+        await broadcast()
+    }
+
+    /// Skip calibration: store the full range so this device is never
+    /// re-prompted, and lift all restrictions.
+    func handleSkipCalibration() async {
+        calibration = .idle
+        calibrationLow = nil
+        if let name = activeSource {
+            profiles.setRange(KeyboardRange(low: 0, high: 127), for: name)
+        }
+        activeRange = nil
         await broadcast()
     }
 
@@ -138,6 +205,7 @@ actor SessionCoordinator {
         currentKey = key
         lesson = ScaleLibrary.lesson(key: currentKey, direction: currentDirection)
         rewindLesson()
+        enforceFit()
         await broadcast()
     }
 
@@ -154,6 +222,7 @@ actor SessionCoordinator {
     func handleSetHandMode(_ raw: String) async {
         handMode = HandMode(rawValue: raw) ?? .together
         rewindLesson()
+        enforceFit()
         await broadcast()
     }
 
@@ -221,7 +290,22 @@ actor SessionCoordinator {
         }
     }
 
-    private func handleNoteEvent(_ event: NoteEvent) async {
+    private func handleNoteEvent(_ sourced: SourcedNoteEvent) async {
+        // Ignore events from sources other than the active keyboard.
+        if activeSource == nil { reconcileActiveSource() }
+        guard sourced.sourceName == activeSource else { return }
+        let event = sourced.event
+
+        // During calibration, note-ons set the range and never reach
+        // the engine.
+        if calibration != .idle {
+            if event.isOn && event.velocity > 0 {
+                handleCalibrationPress(note: event.note)
+                await broadcast()
+            }
+            return
+        }
+
         // Track which notes are physically held down.
         if event.isOn && event.velocity > 0 {
             heldNotes.insert(event.note)
@@ -407,6 +491,173 @@ actor SessionCoordinator {
         }
     }
 
+    // MARK: - Active source, calibration, and range fit
+
+    /// Re-evaluate which connected source should be active and apply
+    /// its stored profile (or start calibration for unknown devices).
+    private func reconcileActiveSource() {
+        let sources = midi.currentSourceNames()
+        let previous = activeSource
+        if sources.isEmpty {
+            activeSource = nil
+        } else if let current = activeSource, sources.contains(current) {
+            // Keep the current selection.
+        } else if sources.count == 1 {
+            activeSource = sources[0]
+        } else if let last = profiles.lastActiveSource, sources.contains(last) {
+            activeSource = last
+        } else {
+            activeSource = sources[0]
+        }
+        applyProfileForActiveSource(deviceChanged: activeSource != previous)
+    }
+
+    /// Apply the stored range for the active device, or enter
+    /// calibration when the device is unknown. An in-progress
+    /// calibration on the same device is left untouched.
+    private func applyProfileForActiveSource(deviceChanged: Bool) {
+        guard let name = activeSource else {
+            activeRange = nil
+            calibration = .idle
+            calibrationLow = nil
+            return
+        }
+        if let stored = profiles.range(for: name) {
+            if deviceChanged {
+                calibration = .idle
+                calibrationLow = nil
+                activeRange = stored.isFull ? nil : stored
+                enforceFit()
+            } else if calibration == .idle {
+                activeRange = stored.isFull ? nil : stored
+            }
+        } else {
+            activeRange = nil
+            if deviceChanged || calibration == .idle {
+                calibration = .awaitingLow
+                calibrationLow = nil
+            }
+        }
+    }
+
+    /// One calibration key press: first sets the low end, second the
+    /// high end (swapped if reversed; ignored if identical).
+    private func handleCalibrationPress(note: Int) {
+        switch calibration {
+        case .awaitingLow:
+            calibrationLow = note
+            calibration = .awaitingHigh
+        case .awaitingHigh:
+            guard let low = calibrationLow else {
+                calibration = .awaitingLow
+                return
+            }
+            guard note != low else { return }
+            finishCalibration(with: KeyboardRange(low: min(low, note), high: max(low, note)))
+        case .idle:
+            break
+        }
+    }
+
+    private func finishCalibration(with range: KeyboardRange) {
+        calibration = .idle
+        calibrationLow = nil
+        if let name = activeSource {
+            profiles.setRange(range, for: name)
+        }
+        activeRange = range.isFull ? nil : range
+        rewindLesson()
+        enforceFit()
+    }
+
+    /// Min/max MIDI note the current hand mode requires for `key`.
+    private func lessonSpan(for key: KeySignature) -> (low: Int, high: Int)? {
+        let l = ScaleLibrary.lesson(key: key, direction: currentDirection)
+        var notes: [Int] = []
+        for step in l.steps {
+            if handMode != .rightOnly, let n = step.leftNote { notes.append(n) }
+            if handMode != .leftOnly, let n = step.rightNote { notes.append(n) }
+        }
+        guard let lo = notes.min(), let hi = notes.max() else { return nil }
+        return (lo, hi)
+    }
+
+    private func fits(_ key: KeySignature, in range: KeyboardRange) -> Bool {
+        guard let span = lessonSpan(for: key) else { return true }
+        return span.low >= range.low && span.high <= range.high
+    }
+
+    /// Keys sharing the scale type (major / natural / harmonic / melodic).
+    private func sameTypeKeys(as key: KeySignature) -> [KeySignature] {
+        let raw = key.rawValue
+        let suffix: String
+        if raw.hasSuffix("NaturalMinor") { suffix = "NaturalMinor" }
+        else if raw.hasSuffix("HarmonicMinor") { suffix = "HarmonicMinor" }
+        else if raw.hasSuffix("MelodicMinor") { suffix = "MelodicMinor" }
+        else { suffix = "Major" }
+        return KeySignature.allCases.filter { $0.rawValue.hasSuffix(suffix) }
+    }
+
+    /// The fitting key of the same type chromatically closest to `key`.
+    private func nearestFittingKey(to key: KeySignature, in range: KeyboardRange) -> KeySignature? {
+        guard let currentSpan = lessonSpan(for: key) else { return nil }
+        return sameTypeKeys(as: key)
+            .filter { $0 != key && fits($0, in: range) }
+            .compactMap { k -> (KeySignature, Int)? in
+                guard let s = lessonSpan(for: k) else { return nil }
+                return (k, abs(s.low - currentSpan.low))
+            }
+            .min { $0.1 < $1.1 }?
+            .0
+    }
+
+    /// If the current key doesn't fit the active range for the current
+    /// hand mode, switch to the nearest fitting key of the same type,
+    /// rewind, and explain in the feedback line. Call after
+    /// `rewindLesson()` so the notice survives the rewind's feedback
+    /// reset.
+    private func enforceFit() {
+        guard let range = activeRange else { return }
+        if fits(currentKey, in: range) { return }
+        let unfitName = keyDisplayName(currentKey)
+        guard let replacement = nearestFittingKey(to: currentKey, in: range) else {
+            feedback = "No \(handModeLabel) scale fits this keyboard"
+            return
+        }
+        currentKey = replacement
+        lesson = ScaleLibrary.lesson(key: currentKey, direction: currentDirection)
+        rewindLesson()
+        feedback = "\(unfitName) doesn't fit this keyboard — switched to \(keyDisplayName(replacement))"
+    }
+
+    private var handModeLabel: String {
+        switch handMode {
+        case .together:  return "both-hands"
+        case .leftOnly:  return "left-hand"
+        case .rightOnly: return "right-hand"
+        }
+    }
+
+    /// Human-readable key name, e.g. "C\u{266F} Major", "A\u{266D} Natural Minor".
+    private func keyDisplayName(_ key: KeySignature) -> String {
+        let raw = key.rawValue
+        let roots: [(String, String)] = [
+            ("cSharp", "C\u{266F}"), ("fSharp", "F\u{266F}"),
+            ("eb", "E\u{266D}"), ("ab", "A\u{266D}"), ("bb", "B\u{266D}"),
+            ("c", "C"), ("d", "D"), ("e", "E"), ("f", "F"),
+            ("g", "G"), ("a", "A"), ("b", "B"),
+        ]
+        for (prefix, label) in roots where raw.hasPrefix(prefix) {
+            let rest = raw.dropFirst(prefix.count)
+            let type = rest.hasPrefix("Major") ? "Major"
+                : rest.hasPrefix("NaturalMinor") ? "Natural Minor"
+                : rest.hasPrefix("HarmonicMinor") ? "Harmonic Minor"
+                : "Melodic Minor"
+            return "\(label) \(type)"
+        }
+        return raw
+    }
+
     private func rewindLesson() {
         eventLog.reset()
         engine.start(lesson: filteredLesson(for: handMode))
@@ -454,7 +705,8 @@ actor SessionCoordinator {
         return Snapshot(
             midi: MidiState(
                 running: midi.isRunning(),
-                sources: midi.currentSourceNames()
+                sources: midi.currentSourceNames(),
+                activeSource: activeSource
             ),
             lesson: LessonState(
                 key: lesson.key.rawValue,
@@ -481,7 +733,12 @@ actor SessionCoordinator {
             mistakesByStep: mistakesByStepWire,
             elapsedSec: elapsed,
             serverTimeMs: Int64(Date().timeIntervalSince1970 * 1000),
-            metronome: MetronomeState(enabled: metronomeEnabled, bpm: metronomeBpm)
+            metronome: MetronomeState(enabled: metronomeEnabled, bpm: metronomeBpm),
+            keyboard: KeyboardState(
+                rangeLow: activeRange?.low,
+                rangeHigh: activeRange?.high,
+                calibration: calibration.rawValue
+            )
         )
     }
 
@@ -625,5 +882,45 @@ actor SessionCoordinator {
         let octave = (midi / 12) - 1
         let pitch  = names[((midi % 12) + 12) % 12]
         return "\(pitch)\(octave)"
+    }
+}
+
+// MARK: - Keyboard range & profile store
+
+/// Physical key range of a keyboard, in MIDI note numbers.
+struct KeyboardRange: Equatable {
+    let low: Int
+    let high: Int
+    /// True when the stored range imposes no restriction.
+    var isFull: Bool { low <= 0 && high >= 127 }
+}
+
+/// UserDefaults-backed per-device key ranges, keyed by the CoreMIDI
+/// display name, plus the last user-selected active source. A "Skip"
+/// during calibration stores the full range [0, 127] so known devices
+/// are never re-prompted.
+struct KeyboardProfileStore {
+    private let rangesKey = "keyboardRanges"
+    private let lastActiveKey = "lastActiveSource"
+
+    func range(for device: String) -> KeyboardRange? {
+        guard let dict = UserDefaults.standard.dictionary(forKey: rangesKey) as? [String: [Int]],
+              let pair = dict[device], pair.count == 2
+        else { return nil }
+        return KeyboardRange(low: pair[0], high: pair[1])
+    }
+
+    func setRange(_ range: KeyboardRange, for device: String) {
+        var dict = (UserDefaults.standard.dictionary(forKey: rangesKey) as? [String: [Int]]) ?? [:]
+        dict[device] = [range.low, range.high]
+        UserDefaults.standard.set(dict, forKey: rangesKey)
+    }
+
+    var lastActiveSource: String? {
+        UserDefaults.standard.string(forKey: lastActiveKey)
+    }
+
+    func setLastActiveSource(_ name: String) {
+        UserDefaults.standard.set(name, forKey: lastActiveKey)
     }
 }
