@@ -219,6 +219,11 @@ export function PracticePanel({ snapshot, timing, timingStats, playMode, loopCou
           {completionFeedback ?? latchedCompletion ?? feedbackWithTiming}
         </p>
         {(statsLine ?? latchedStats) && <p className="practice__timing-stats">{statsLine ?? latchedStats}</p>}
+        {lesson?.fixedVelocity && (
+          <p className="practice__velocity-note">
+            ⓘ Keyboard doesn't report dynamics — evenness not scored
+          </p>
+        )}
       </section>
     </main>
   );

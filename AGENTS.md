@@ -120,6 +120,15 @@ There is no `docs/protocol.md` in this repo; refer to `../jsp/docs/protocol.md`
 if you need the field reference. Do not diverge from the Mac wire format
 without a deliberate decision.
 
+**Deliberate divergence**: `LessonState.fixedVelocity: Bool` is iPad-only
+(not in the Mac `jsp` wire format). True when every note-on of the current
+run carried an identical velocity (≥8 samples) — i.e. the keyboard has no
+touch response, so `velocityCV` is suppressed (null), evenness drops out of
+the stats/composite score, and the UI shows a "doesn't report dynamics"
+notice. Detection is stateless per run (reset on every rewind); see
+`SessionCoordinator.trackVelocity` / `fixedVelocityDetected`. Port to Mac
+`jsp` later if desired.
+
 ## web/dist bundle — how it gets into the app
 
 xcodegen's `resources: type: folder` does **not** correctly add `.xcassets`

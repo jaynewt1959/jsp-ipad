@@ -508,6 +508,15 @@ body {
   min-height: 0 !important;
 }
 
+/* Fixed-velocity keyboard notice (keyboard without touch response). */
+.practice__velocity-note {
+  font-size: 12px;
+  color: var(--fg-soft);
+  opacity: 0.75;
+  margin-top: 2px !important;
+  min-height: 0 !important;
+}
+
 /* ===== Timing badge on the score ======================================== */
 
 .timing-badge {

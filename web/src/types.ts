@@ -54,6 +54,10 @@ export interface LessonState {
   velocityCV: number | null;
   /** Stddev/mean × 100 of inter-onset intervals. Lower = more rhythmically even. null until ≥3 notes. */
   rhythmCV: number | null;
+  /** True when every note-on this run carried an identical velocity (≥8 samples) —
+   *  the keyboard is not touch-sensitive, so velocityCV is suppressed (null) and
+   *  evenness is excluded from the composite score. iPad-only field (not in Mac jsp). */
+  fixedVelocity: boolean;
 }
 
 export interface MetronomeState {

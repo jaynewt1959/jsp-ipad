@@ -91,6 +91,12 @@ public struct LessonState: Encodable, Sendable {
     /// Coefficient of variation (stddev/mean × 100) of inter-onset intervals.
     /// Lower = more rhythmically even. nil until ≥3 correct notes played.
     public let rhythmCV: Double?
+    /// True when every note-on this run carried an identical velocity
+    /// (≥8 samples) — i.e. the keyboard is not touch-sensitive and
+    /// velocity data is meaningless. While true, `velocityCV` is
+    /// suppressed (nil). iPad-only field; not present in the Mac `jsp`
+    /// wire format (deliberate divergence).
+    public let fixedVelocity: Bool
 }
 
 /// Current metronome settings, always included in the snapshot.

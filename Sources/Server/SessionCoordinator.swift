@@ -78,6 +78,14 @@ actor SessionCoordinator {
     /// Wall-clock ms timestamps of each correct note-on for the active hand.
     /// Used to compute inter-onset interval CV (rhythm metric).
     private var correctNoteOnMs: [Double] = []
+    /// Fixed-velocity detection (per run). Non-touch-sensitive keyboards
+    /// send a constant velocity for every note-on, which makes
+    /// `velocityCV()` meaninglessly ~0 ("perfect" evenness). Track every
+    /// note-on velocity; if ≥8 arrive without a single distinct value,
+    /// treat velocity data as unavailable and suppress the stat.
+    private var firstNoteOnVelocity: Int? = nil
+    private var sawDistinctVelocity: Bool = false
+    private var noteOnCount: Int = 0
     private var midiTask: Task<Void, Never>?
     /// Notes currently held down. Used for legato synthesis (detecting
     /// when the next step's note is already physically held as the
@@ -217,6 +225,7 @@ actor SessionCoordinator {
         // Track which notes are physically held down.
         if event.isOn && event.velocity > 0 {
             heldNotes.insert(event.note)
+            trackVelocity(event.velocity)
         } else {
             heldNotes.remove(event.note)
         }
@@ -416,6 +425,9 @@ actor SessionCoordinator {
         syncWorstStep = nil
         correctVelocities = []
         correctNoteOnMs = []
+        firstNoteOnVelocity = nil
+        sawDistinctVelocity = false
+        noteOnCount = 0
         let now = Date()
         lessonStartedAt = now
         lessonFinishedAt = nil
@@ -460,8 +472,9 @@ actor SessionCoordinator {
                 minSyncMs: syncMinMs,
                 maxSyncMs: syncMaxMs,
                 worstSyncStep: syncWorstStep,
-                velocityCV: velocityCV(),
-                rhythmCV: rhythmCV()
+                velocityCV: fixedVelocityDetected ? nil : velocityCV(),
+                rhythmCV: rhythmCV(),
+                fixedVelocity: fixedVelocityDetected
             ),
             handStatus: HandStatusPair(left: leftStatus, right: rightStatus),
             feedback: feedback,
@@ -561,6 +574,27 @@ actor SessionCoordinator {
         guard mean > 0 else { return nil }
         let variance = iois.reduce(0.0) { $0 + ($1 - mean) * ($1 - mean) } / n
         return sqrt(variance) / mean * 100
+    }
+
+    /// True when every note-on this run carried the same velocity — the
+    /// signature of a keyboard without touch response (or with Touch
+    /// Response set to Off). Requires a minimum sample count so the
+    /// first few notes of a run can't trigger it; one distinct value
+    /// latches `sawDistinctVelocity` and clears the flag for the run.
+    private var fixedVelocityDetected: Bool {
+        noteOnCount >= Self.fixedVelocityMinSamples && !sawDistinctVelocity
+    }
+    private static let fixedVelocityMinSamples = 8
+
+    /// Feed one note-on velocity into fixed-velocity detection.
+    /// Counts wrong notes too — more samples, faster detection.
+    private func trackVelocity(_ velocity: Int) {
+        noteOnCount += 1
+        if let first = firstNoteOnVelocity {
+            if velocity != first { sawDistinctVelocity = true }
+        } else {
+            firstNoteOnVelocity = velocity
+        }
     }
 
     private func velocityCV() -> Double? {
