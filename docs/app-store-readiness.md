@@ -35,9 +35,11 @@ Remaining mitigations (App Store Connect, no code):
 1. **App Review notes**: a USB MIDI keyboard (via USB-C) is the primary
    input, but the app is fully testable by tapping the on-screen keys;
    include a **demo video link** showing connect → calibration → scale
-   practice → completion stats.
+   practice → completion stats. Draft + shot list ready in
+   `docs/app-store-metadata.md`; video still to record.
 2. App Store description should mention both: best with a USB MIDI
-   keyboard, works with on-screen keys.
+   keyboard, works with on-screen keys. Draft ready in
+   `docs/app-store-metadata.md`.
 
 ## Medium items
 
@@ -56,9 +58,10 @@ resizable-scene support in a post-launch update. SwiftUI scene
 lifecycle ✅ and launch screen ✅ already satisfy the iPadOS 27
 requirements announced so far.
 
-⬜ **App name "JSP"** may be taken or judged too generic in App Store
-Connect (2.3.7). Fallback ready: "JSP — Piano Scale Practice" (matches
-`web/index.html` title).
+✅ **App name** — strategy + candidates in `docs/app-store-metadata.md`:
+store name "Jay's Scale Practice" (display name stays JSP), knock-out
+screening checklist included. Reserve in ASC as soon as the developer
+account is live.
 
 ## App Store Connect checklist (no code)
 
