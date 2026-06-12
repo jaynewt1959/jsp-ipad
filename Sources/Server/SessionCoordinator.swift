@@ -54,14 +54,43 @@ actor SessionCoordinator {
     /// Unix-epoch ms of the most recent correct note-on — used by the
     /// client to evaluate timing against its own beat grid.
     private var lastNoteOnMs: Int64? = nil
-    /// Step index used by the score highlight overlay.  Advances on
-    /// `.legatoPrepress` as well as `.advanced` so the green ellipse
-    /// jumps to the pre-pressed note immediately.
+    /// Step index used by the score highlight overlay.
     private var displayStepIndex: Int = 0
-    /// Count of `.alreadySatisfied` results for the active hand since
-    /// the last rewind.  Used to compute accuracy alongside wrong-note
-    /// mistakes: zero skips + zero mistakes = 100 %.
-    private var alreadySatisfiedCount: Int = 0
+    /// Count of stale-note precision demerits since the last rewind.
+    /// Incremented when a hand presses step N while still physically
+    /// holding the note from step N-2 (one-step overlap is valid legato;
+    /// two-step overlap is imprecise technique).
+    private var stalenessCount: Int = 0
+
+    // MARK: - Stale-note tracker
+
+    /// Tracks the two most recent correct notes for one hand to detect
+    /// stale-note precision demerits.  A demerit is counted when the
+    /// note from N-2 steps is still physically held when N is pressed.
+    private struct StaleNoteTracker {
+        var prevNote: Int? = nil     // note pressed at step N-2
+        var currentNote: Int? = nil  // note pressed at step N-1
+
+        /// Call when the hand correctly presses `newNote`.
+        /// Returns `true` if the note from two steps ago is still held.
+        /// `prevNote == newNote` is always false-positive: a piano key
+        /// must be released before it can be re-pressed, so the note
+        /// can only be in `heldNotes` because we just inserted it.
+        mutating func advance(newNote: Int, heldNotes: Set<Int>) -> Bool {
+            let stale = prevNote.map { $0 != newNote && heldNotes.contains($0) } ?? false
+            prevNote = currentNote
+            currentNote = newNote
+            return stale
+        }
+
+        mutating func reset() {
+            prevNote = nil
+            currentNote = nil
+        }
+    }
+
+    private var leftStaleTracker  = StaleNoteTracker()
+    private var rightStaleTracker = StaleNoteTracker()
     /// Event-clock ms of the first hand's correct note-on on the current
     /// step (derived from `NoteEvent.timestampNs`), if available.
     private var firstHandArrivedEventMs: Int64? = nil
@@ -87,9 +116,8 @@ actor SessionCoordinator {
     private var sawDistinctVelocity: Bool = false
     private var noteOnCount: Int = 0
     private var midiTask: Task<Void, Never>?
-    /// Notes currently held down. Used for legato synthesis (detecting
-    /// when the next step's note is already physically held as the
-    /// previous step advances).
+    /// Notes currently held down. Used by the stale-note tracker to
+    /// detect when a note from N-2 steps is still physically held.
     private var heldNotes: Set<Int> = []
     /// Bounded ring-buffer of MIDI events + their engine results.
     /// Always on; reset at each lesson rewind.
@@ -383,10 +411,11 @@ actor SessionCoordinator {
     }
 
     /// Shared pipeline for real and simulated note events: held-note
-    /// tracking, engine processing, event log, stats, legato
-    /// synthesis, broadcast.
+    /// tracking, engine processing, event log, stats, broadcast.
     private func process(_ event: NoteEvent) async {
         // Track which notes are physically held down.
+        // Note-offs update heldNotes but produce no engine results and
+        // no broadcast — they are only relevant to stale-note detection.
         if event.isOn && event.velocity > 0 {
             heldNotes.insert(event.note)
             trackVelocity(event.velocity)
@@ -401,9 +430,6 @@ actor SessionCoordinator {
         // sidebar Restart button (handleRestart) can rewind the lesson.
         if engine.currentStepIndex >= lesson.steps.count { return }
 
-        // Process
-        // every result (including empty — stray note-offs are still
-        // diagnostic).
         let results = engine.process(event)
         eventLog.append(LogEntry(
             ms: ms, note: event.note, velocity: event.velocity,
@@ -412,47 +438,13 @@ actor SessionCoordinator {
             triggeredRestart: false
         ))
 
+        // Note-offs return [] from the engine; no state to update.
         guard !results.isEmpty else { return }
-
-        // Skip broadcasting for events whose only results are alreadySatisfied.
-        // These change nothing visible (no step advance, no status change, no score
-        // highlight update) but would compete for the bufferingNewest(1) WS write
-        // slot, potentially dropping the important step-advance snapshot that follows.
-        let isAllAlreadySatisfied = results.allSatisfy {
-            if case .alreadySatisfied = $0 { return true } else { return false }
-        }
-        if isAllAlreadySatisfied { return }
 
         let eventTimestampMs = event.timestampNs > 0
             ? Int64(event.timestampNs / 1_000_000)
             : nil
         for r in results { applyResult(r, eventTimestampMs: eventTimestampMs, velocity: event.velocity) }
-
-        // Legato synthesis: if the engine just advanced, check whether
-        // any of the new step's notes are already physically held.
-        // If so, synthesise a note-on so the engine registers them
-        // immediately — the player already pressed the key before
-        // releasing the previous step’s key, which is valid legato.
-        if results.contains(where: { if case .advanced(let n) = $0, n != nil { return true } else { return false } }),
-           let step = engine.currentStep {
-            for hand in HandSide.allCases {
-                guard let note = step.expectedNote(for: hand),
-                      heldNotes.contains(note) else { continue }
-                let synth = NoteEvent(
-                    note: note, velocity: event.velocity,
-                    isOn: true, timestampNs: event.timestampNs
-                )
-                let synthResults = engine.process(synth)
-                let newStep = engine.currentStepIndex
-                eventLog.append(LogEntry(
-                    ms: ms, note: note, velocity: event.velocity,
-                    isOn: true, stepIndex: newStep,
-                    results: synthResults.map { stringifyResult($0) },
-                    triggeredRestart: false
-                ))
-                for sr in synthResults { applyResult(sr, eventTimestampMs: eventTimestampMs, velocity: event.velocity) }
-            }
-        }
 
         await broadcast()
     }
@@ -484,6 +476,17 @@ actor SessionCoordinator {
             if !isPartnerHand(hand) {
                 let nowWallMs = Int64(Date().timeIntervalSince1970 * 1000)
                 displayStepIndex = stepIndex
+
+                // Stale-note precision check: demerit if the note from
+                // two steps ago is still physically held right now.
+                let expectedNote = lesson.steps[stepIndex].expectedNote(for: hand)!
+                let isStale: Bool
+                switch hand {
+                case .left:  isStale = leftStaleTracker.advance(newNote: expectedNote, heldNotes: heldNotes)
+                case .right: isStale = rightStaleTracker.advance(newNote: expectedNote, heldNotes: heldNotes)
+                }
+                if isStale { stalenessCount += 1 }
+
                 // Sync tracking: measure gap between the two hands in together mode.
                 if handMode == .together {
                     if let firstWallMs = firstHandArrivedWallMs {
@@ -526,32 +529,13 @@ actor SessionCoordinator {
             let noteStr = engine.currentStep
                 .flatMap { $0.expectedNote(for: hand) }
                 .map    { noteName($0) } ?? label(hand)
-            feedback = "✓ \(noteStr)"
-
-        case .released(let hand, _):
-            setStatus(.waitingForPartner, for: hand)
-            guard !isPartnerHand(hand) else { break }
-            feedback = ""
+            feedback = "\u{2713} \(noteStr)"
 
         case .wrongNote(let hand, let stepIndex, _, let played):
             setStatus(.wrong(played: played), for: hand)
             guard !isPartnerHand(hand) else { break }
-            feedback = "✗ \(label(hand)) played \(noteName(played)) — try again"
+            feedback = "\u{2717} \(label(hand)) played \(noteName(played)) — try again"
             mistakesByStep[stepIndex, default: 0] += 1
-
-        case .alreadySatisfied(let hand, _):
-            // The hand has already begun (or completed) the cycle for
-            // this step; preserve whatever status it currently shows.
-            if !isPartnerHand(hand) { alreadySatisfiedCount += 1 }
-
-        case .legatoPrepress(let hand, let stepIndex):
-            setStatus(.correct, for: hand)
-            if !isPartnerHand(hand) { displayStepIndex = stepIndex + 1 }
-            guard !isPartnerHand(hand) else { break }
-            let legatoNoteStr = engine.currentStep
-                .flatMap { $0.expectedNote(for: hand) }
-                .map    { noteName($0) } ?? label(hand)
-            feedback = "✓ \(legatoNoteStr)"
 
         case .handNotRequired(let hand, _):
             guard !isPartnerHand(hand) else { break }
@@ -746,7 +730,9 @@ actor SessionCoordinator {
         feedback = ""
         mistakesByStep = [:]
         displayStepIndex = 0
-        alreadySatisfiedCount = 0
+        stalenessCount = 0
+        leftStaleTracker.reset()
+        rightStaleTracker.reset()
         firstHandArrivedEventMs = nil
         firstHandArrivedWallMs = nil
         syncTotalMs = 0
@@ -799,7 +785,7 @@ actor SessionCoordinator {
                 lessonStartMs: lessonStartMs,
                 lastNoteOnMs: lastNoteOnMs,
                 displayStepIndex: displayStepIndex,
-                alreadySatisfiedCount: alreadySatisfiedCount,
+                stalenessCount: stalenessCount,
                 avgSyncMs: syncCount > 0 ? syncTotalMs / Double(syncCount) : nil,
                 minSyncMs: syncMinMs,
                 maxSyncMs: syncMaxMs,
@@ -843,9 +829,7 @@ actor SessionCoordinator {
     /// Encode a `StepResult` as a compact colon-delimited string.
     /// Format: kind:hand:step[:extra…]
     ///   correct:left:0
-    ///   released:right:2
     ///   wrong:left:3:50:48       (expected:played)
-    ///   alreadySatisfied:right:5
     ///   notRequired:left:7
     ///   advanced:4   or   advanced:done
     ///   lessonNotStarted
@@ -853,16 +837,10 @@ actor SessionCoordinator {
         switch result {
         case .correct(let hand, let step):
             return "correct:\(hand.rawValue):\(step)"
-        case .released(let hand, let step):
-            return "released:\(hand.rawValue):\(step)"
         case .wrongNote(let hand, let step, let expected, let played):
             return "wrong:\(hand.rawValue):\(step):\(expected):\(played)"
         case .handNotRequired(let hand, let step):
             return "notRequired:\(hand.rawValue):\(step)"
-        case .alreadySatisfied(let hand, let step):
-            return "alreadySatisfied:\(hand.rawValue):\(step)"
-        case .legatoPrepress(let hand, let step):
-            return "legatoPrepress:\(hand.rawValue):\(step)"
         case .advanced(let to):
             return "advanced:\(to.map(String.init) ?? "done")"
         case .lessonNotStarted:

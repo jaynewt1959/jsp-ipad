@@ -7,10 +7,6 @@ import { noteName, FLAT_KEY_SIGNATURES } from "../util/noteName";
 import { compositeScore } from "../util/compositeScore";
 import { tapsEnabled } from "../util/demoMode";
 import { tapNoteOn, tapNoteOff } from "../audio/tapSynth";
-import {
-  markTapSent, lastTapLatencyMs,
-  markPressStart, markPressEnd, lastPressDurationMs,
-} from "../util/tapLatency";
 import { HandStatusBadge } from "./HandStatusBadge";
 import { KeyboardStrip } from "./KeyboardStrip";
 import { KeyboardBar } from "./KeyboardBar";
@@ -111,9 +107,9 @@ export function PracticePanel({ snapshot, send, timing, timingStats, playMode, l
   // Shown in the feedback line when the lesson is complete.
   const completionFeedback = lesson?.isCompleted ? (() => {
     const mistakes = Object.values(snapshot?.mistakesByStep ?? {}).reduce((a, b) => a + b, 0);
-    const skips = lesson.alreadySatisfiedCount ?? 0;
+    const stale = lesson.stalenessCount ?? 0;
     const totalSteps = lesson.totalSteps;
-    const precision = Math.round(totalSteps / (totalSteps + mistakes + skips) * 100);
+    const precision = Math.round(totalSteps / (totalSteps + mistakes + stale) * 100);
     const elapsed = snapshot?.elapsedSec;
     const timeStr = elapsed != null
       ? `${Math.floor(elapsed / 60)}:${String(Math.floor(elapsed % 60)).padStart(2, "0")}`
@@ -128,12 +124,13 @@ export function PracticePanel({ snapshot, send, timing, timingStats, playMode, l
       const lh = scaleDesc.lhMidi[worstStep];
       return rh != null && lh != null ? `${noteName(rh, useFlats)}+${noteName(lh, useFlats)}` : null;
     })() : null;
-    const score = compositeScore(totalSteps, mistakes, skips, lesson.velocityCV, lesson.rhythmCV);
+    const score = compositeScore(totalSteps, mistakes, stale, lesson.velocityCV, lesson.rhythmCV);
     const parts = [
       score != null ? `Score ${Math.round(score)}` : null,
       timeStr && `${timeStr}`,
       `${precision}% precision`,
       `${mistakes} mistake${mistakes === 1 ? "" : "s"}`,
+      stale > 0 ? `${stale} stale note${stale === 1 ? "" : "s"}` : null,
       syncMs  != null ? `sync avg ±${Math.round(syncMs)}ms` : null,
       minSync != null ? `best ${Math.round(minSync)}ms` : null,
       maxSync != null ? `worst ${Math.round(maxSync)}ms${worstNote ? ` (${worstNote})` : ""}` : null,
@@ -190,8 +187,6 @@ export function PracticePanel({ snapshot, send, timing, timingStats, playMode, l
       {__DEV_TOOLS__ && (
         <div className="practice__debug-bar">
           Build: {__BUILD_TIME__}
-          {lastTapLatencyMs() != null && ` \u00b7 tap\u2192snap: ${lastTapLatencyMs()}ms`}
-          {lastPressDurationMs() != null && ` \u00b7 press: ${lastPressDurationMs()}ms`}
         </div>
       )}
       <header className="practice__header">
@@ -253,11 +248,8 @@ export function PracticePanel({ snapshot, send, timing, timingStats, playMode, l
             // their own sound.
             if (isOn) {
               tapNoteOn(midi);
-              markTapSent();
-              markPressStart();
             } else {
               tapNoteOff(midi);
-              markPressEnd();
             }
             send({ type: "simulateNote", note: midi, isOn });
           }}

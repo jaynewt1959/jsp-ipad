@@ -47,13 +47,13 @@ export interface LessonState {
   lessonStartMs: number;
   /** Unix-epoch ms when the most recent correct note-on arrived. null until first note. */
   lastNoteOnMs: number | null;
-  /** Step index the score overlay should highlight. Advances on legatoPrepress
-   *  as well as advancement, so the green dot tracks the physically-pressed note. */
+  /** Step index the score overlay should highlight. */
   displayStepIndex: number;
-  /** Count of alreadySatisfied events for the active hand since last rewind.
-   *  Non-zero means the user re-pressed notes while still holding them (too legato).
-   *  Zero mistakes AND zero skips = 100% accuracy. */
-  alreadySatisfiedCount: number;
+  /** Count of stale-note precision demerits since the last rewind.
+   *  Incremented when a hand presses step N while still holding the note
+   *  from step N-2. One-step overlap is valid legato; two-step overlap
+   *  counts as imprecise technique. Zero mistakes AND zero staleness = 100% precision. */
+  stalenessCount: number;
   /** Average ms between first and second hand arriving on the same step.
    * Only set in together mode; null until at least one step completes. */
   avgSyncMs: number | null;
