@@ -179,8 +179,8 @@ port to Mac later if desired):
 1. `LessonState.fixedVelocity: Bool` — true when every note-on of the
    current run carried an identical velocity (≥8 samples), i.e. the
    keyboard has no touch response. `velocityCV` is suppressed (null),
-   evenness drops out of the stats/composite score, and the UI shows a
-   "doesn't report dynamics" notice. Detection is stateless per run
+   evenness drops out of the composite score, and the completion
+   stats line shows "evenness n/a". Detection is stateless per run
    (reset on every rewind); see `SessionCoordinator.trackVelocity` /
    `fixedVelocityDetected`.
 2. `MidiState.activeSource: String?` — display name of the MIDI source

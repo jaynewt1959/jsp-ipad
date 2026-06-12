@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import type { Command, Snapshot } from "../types";
 import type { TimingResult, TimingStats } from "../hooks/useTiming";
 import type { PlayMode } from "../hooks/usePersistedSettings";
@@ -24,6 +24,14 @@ interface Props {
 }
 
 // Keyboard range is computed dynamically from the active scale (see below).
+
+/** One segment of the timing-stats line, colour-coded like the
+ *  per-note timing feedback (amber = early, green = on time,
+ *  orange = late). */
+interface StatPart {
+  kind: "early" | "ontime" | "late";
+  text: string;
+}
 
 export function PracticePanel({ snapshot, send, timing, timingStats, playMode, loopCountdown, manualResetSeq }: Props) {
   const lesson = snapshot?.lesson;
@@ -82,17 +90,19 @@ export function PracticePanel({ snapshot, send, timing, timingStats, playMode, l
 
   // Timing stats: show when there's enough data.
   // Always shown on completion; shown mid-lesson only once we have 5+ notes.
+  // Memoised on primitives so the latch effect below doesn't loop on
+  // a fresh array identity every render.
   const isCompleted = lesson?.isCompleted ?? false;
-  const statsLine = (() => {
+  const statsParts = useMemo<StatPart[] | null>(() => {
     if (timingStats.total === 0) return null;
     if (timingStats.total < 5 && !isCompleted) return null;
     const pct = (n: number) => `${Math.round(n / timingStats.total * 100)}%`;
-    const parts: string[] = [];
-    if (timingStats.early  > 0) parts.push(`Early ${pct(timingStats.early)}`);
-    parts.push(`On time ${pct(timingStats.onTime)}`);
-    if (timingStats.late   > 0) parts.push(`Late ${pct(timingStats.late)}`);
-    return parts.join(" · ");
-  })();
+    const parts: StatPart[] = [];
+    if (timingStats.early  > 0) parts.push({ kind: "early",  text: `Early ${pct(timingStats.early)}` });
+    parts.push({ kind: "ontime", text: `On time ${pct(timingStats.onTime)}` });
+    if (timingStats.late   > 0) parts.push({ kind: "late",   text: `Late ${pct(timingStats.late)}` });
+    return parts;
+  }, [timingStats.early, timingStats.onTime, timingStats.late, timingStats.total, isCompleted]);
 
   // Shown in the feedback line when the lesson is complete.
   const completionFeedback = lesson?.isCompleted ? (() => {
@@ -123,7 +133,14 @@ export function PracticePanel({ snapshot, send, timing, timingStats, playMode, l
       syncMs  != null ? `sync avg ±${Math.round(syncMs)}ms` : null,
       minSync != null ? `best ${Math.round(minSync)}ms` : null,
       maxSync != null ? `worst ${Math.round(maxSync)}ms${worstNote ? ` (${worstNote})` : ""}` : null,
-      lesson.velocityCV != null ? `evenness ${(100 - Math.min(lesson.velocityCV, 100)).toFixed(0)}%` : null,
+      // Fixed-velocity input (on-screen taps, keyboards without touch
+      // response) has no dynamics — mark evenness n/a rather than
+      // showing a separate notice.
+      lesson.fixedVelocity
+        ? "evenness n/a"
+        : lesson.velocityCV != null
+          ? `evenness ${(100 - Math.min(lesson.velocityCV, 100)).toFixed(0)}%`
+          : null,
       lesson.rhythmCV != null ? `rhythm ${(100 - Math.min(lesson.rhythmCV, 100)).toFixed(0)}%` : null,
     ].filter(Boolean).join(" \u00b7 ");
     const suffix = playMode === "once"
@@ -138,14 +155,14 @@ export function PracticePanel({ snapshot, send, timing, timingStats, playMode, l
   // Keeps the stats visible after loop/manual restart so the user can
   // read them. Cleared once the first MIDI note advances the step.
   const [latchedCompletion, setLatchedCompletion] = useState<string | null>(null);
-  const [latchedStats, setLatchedStats] = useState<string | null>(null);
+  const [latchedStats, setLatchedStats] = useState<StatPart[] | null>(null);
 
   useEffect(() => {
     if (completionFeedback) {
       setLatchedCompletion(completionFeedback);
-      setLatchedStats(statsLine);
+      setLatchedStats(statsParts);
     }
-  }, [completionFeedback, statsLine]);
+  }, [completionFeedback, statsParts]);
 
   // Clear on first note of new session (loop restart)
   const stepIndex = snapshot?.lesson.currentStepIndex ?? 0;
@@ -237,12 +254,20 @@ export function PracticePanel({ snapshot, send, timing, timingStats, playMode, l
         <p style={feedbackColor ? { color: feedbackColor } : undefined}>
           {completionFeedback ?? latchedCompletion ?? feedbackWithTiming}
         </p>
-        {(statsLine ?? latchedStats) && <p className="practice__timing-stats">{statsLine ?? latchedStats}</p>}
-        {lesson?.fixedVelocity && (
-          <p className="practice__velocity-note">
-            ⓘ Keyboard doesn't report dynamics — evenness not scored
-          </p>
-        )}
+        {(() => {
+          const stats = statsParts ?? latchedStats;
+          if (!stats) return null;
+          return (
+            <p className="practice__timing-stats">
+              {stats.map((part, i) => (
+                <span key={part.kind}>
+                  {i > 0 && " \u00b7 "}
+                  <span className={`practice__timing-stat--${part.kind}`}>{part.text}</span>
+                </span>
+              ))}
+            </p>
+          );
+        })()}
       </section>
 
       <KeyboardBar snapshot={snapshot} send={send} />

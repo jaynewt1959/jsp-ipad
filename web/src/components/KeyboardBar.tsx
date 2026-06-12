@@ -20,10 +20,12 @@ export function KeyboardBar({ snapshot, send }: Props) {
 
   // Demo mode: no physical keyboard is driving the lesson — the
   // on-screen keys are the input. Show a hint instead of device info.
+  // Styled like the calibration prompt (amber): both are instructions
+  // about how to physically interact with the app.
   if (tapsEnabled(midi)) {
     return (
       <div className="keyboard-bar">
-        <span className="keyboard-bar__device">
+        <span className="keyboard-bar__prompt">
           🎹 No keyboard connected — tap the keys on screen to practice
         </span>
       </div>
