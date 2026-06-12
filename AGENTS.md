@@ -133,6 +133,9 @@ dead-code elimination. Xcode Debug builds and manual `npm run build`
 `__DEV_TOOLS__` gate — App Review reads visible build stamps/debug
 tools as "beta app" (Guideline 2.2).
 
+Full submission audit + remaining action plan:
+`docs/app-store-readiness.md`.
+
 ## Wire contract — keep two files in sync
 
 Same contract as the Mac `jsp` repo:
