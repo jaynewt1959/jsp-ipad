@@ -7,6 +7,7 @@
 //   • hidden      — when MIDI is not running
 import type { Command, Snapshot } from "../types";
 import { noteName } from "../util/noteName";
+import { tapsEnabled } from "../util/demoMode";
 
 interface Props {
   snapshot: Snapshot | null;
@@ -16,6 +17,19 @@ interface Props {
 export function KeyboardBar({ snapshot, send }: Props) {
   const midi = snapshot?.midi;
   const kb = snapshot?.keyboard;
+
+  // Demo mode: no physical keyboard is driving the lesson — the
+  // on-screen keys are the input. Show a hint instead of device info.
+  if (tapsEnabled(midi)) {
+    return (
+      <div className="keyboard-bar">
+        <span className="keyboard-bar__device">
+          🎹 No keyboard connected — tap the keys on screen to practice
+        </span>
+      </div>
+    );
+  }
+
   if (!midi?.running || !kb) return null;
 
   if (kb.calibration !== "idle") {

@@ -182,6 +182,11 @@ public struct InboundCommand: Decodable, Sendable {
     public let clearHistory: Bool?
     /// Payload for `setActiveSource` — a MIDI source display name.
     public let sourceName: String?
+    /// Payload for `simulateNote` — MIDI note number (0–127) of an
+    /// on-screen keyboard tap. iPad-only command (not in Mac jsp).
+    public let note: Int?
+    /// Payload for `simulateNote` — true = press, false = release.
+    public let isOn: Bool?
 }
 
 public enum CommandType: String {
@@ -197,6 +202,7 @@ public enum CommandType: String {
     case startCalibration
     case cancelCalibration
     case skipCalibration
+    case simulateNote
     case ping
 }
 

@@ -678,6 +678,11 @@ body {
   background: transparent;
   border-radius: 8px;
   user-select: none;
+  /* Demo-mode taps: keep the browser from scrolling/zooming or
+     showing selection callouts while keys are being played. */
+  touch-action: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
 }
 
 .keyboard-strip__whites {
@@ -754,11 +759,25 @@ body {
   background: #0f172a;
   border: 1px solid #000;
   border-radius: 0 0 4px 4px;
+  /* The blacks overlay container is pointer-events: none so white
+     keys stay tappable; re-enable hits on the keys themselves. */
+  pointer-events: auto;
 }
 
 .keyboard-strip__black--hl-left  { background: var(--blue); }
 .keyboard-strip__black--hl-right { background: var(--orange); }
 .keyboard-strip__black--hl-both  { background: var(--purple); }
+
+/* Demo mode: keys double as touch input when no MIDI keyboard is active */
+.keyboard-strip--tappable .keyboard-strip__white,
+.keyboard-strip--tappable .keyboard-strip__black {
+  cursor: pointer;
+}
+
+.keyboard-strip__white--pressed,
+.keyboard-strip__black--pressed {
+  filter: brightness(0.72);
+}
 
 /* ===== Results overlay =================================================== */
 

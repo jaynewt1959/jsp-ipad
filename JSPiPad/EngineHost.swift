@@ -108,6 +108,10 @@ actor EngineHost {
                         case .startCalibration:  await coordinator.handleStartCalibration()
                         case .cancelCalibration: await coordinator.handleCancelCalibration()
                         case .skipCalibration:   await coordinator.handleSkipCalibration()
+                        case .simulateNote:
+                            if let note = cmd.note, let isOn = cmd.isOn {
+                                await coordinator.handleSimulateNote(note: note, isOn: isOn)
+                            }
                         case .ping, .none: break
                         }
                     }

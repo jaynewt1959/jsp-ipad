@@ -127,7 +127,8 @@ actor SessionCoordinator {
     // MARK: - External commands
 
     /// Start CoreMIDI and (re)start the lesson. Idempotent w.r.t. the
-    /// MIDI side; rewinds the lesson regardless.
+    /// MIDI side; rewinds the lesson regardless — connecting MIDI
+    /// always begins a fresh practice session.
     func handleStart() async {
         midi.setSourcesChangedHandler { [weak self] in
             guard let self else { return }
@@ -135,6 +136,10 @@ actor SessionCoordinator {
         }
         midi.start()
         beginConsumingMidiIfNeeded()
+        // The input device is changing: stale holds (e.g. an on-screen
+        // tap mid-press) can never deliver their note-off through the
+        // new input, so drop them.
+        heldNotes.removeAll()
         rewindLesson()
         reconcileActiveSource()
         await broadcast()
@@ -226,12 +231,23 @@ actor SessionCoordinator {
         await broadcast()
     }
 
-    /// Stop receiving MIDI events. Lesson state is preserved so the
-    /// user can review results.
+    /// Stop receiving MIDI events and reset the practice session —
+    /// disconnecting (like connecting) always begins a fresh run, so
+    /// demo-mode taps resume cleanly even if the previous run had
+    /// completed (completed lessons ignore all input until a rewind).
+    /// Completion stats stay visible client-side via the latched
+    /// display until the next note.
     func handleStopMidi() async {
         midi.stop()
         midiTask?.cancel()
         midiTask = nil
+        // The physical keyboard is gone: held keys can never deliver
+        // their note-offs, and the device-specific state (active
+        // source, range, calibration) no longer applies. Clearing the
+        // active source is also what re-enables on-screen taps.
+        heldNotes.removeAll()
+        reconcileActiveSource()
+        rewindLesson()
         await broadcast()
     }
 
@@ -306,6 +322,43 @@ actor SessionCoordinator {
             return
         }
 
+        await process(event)
+    }
+
+    /// Velocity attached to on-screen key taps. Constant, so the
+    /// existing fixed-velocity detection latches and suppresses the
+    /// evenness stat — taps carry no dynamics.
+    private static let simulatedVelocity = 80
+
+    /// A tap from the web UI's on-screen keyboard (`simulateNote`
+    /// command). Only honored while no physical keyboard is driving
+    /// the lesson; feeds the exact same pipeline as real MIDI so
+    /// mistakes, stats, legato, and the event log behave identically.
+    func handleSimulateNote(note: Int, isOn: Bool) async {
+        // A physical keyboard owns the lesson — ignore taps. (This
+        // also guarantees calibration is idle: calibration only runs
+        // while a physical source is active.)
+        guard !(midi.isRunning() && activeSource != nil) else { return }
+        guard (0...127).contains(note) else { return }
+
+        // First input after launch: anchor the run's clock the way
+        // Connect MIDI / Reset would have, so elapsed time and the
+        // metronome beat grid don't count from app boot.
+        if isOn && lessonStartMs == 0 { rewindLesson() }
+
+        let event = NoteEvent(
+            note: note,
+            velocity: isOn ? Self.simulatedVelocity : 0,
+            isOn: isOn,
+            timestampNs: 0  // sync metrics use the wall-clock fallback
+        )
+        await process(event)
+    }
+
+    /// Shared pipeline for real and simulated note events: held-note
+    /// tracking, engine processing, event log, stats, legato
+    /// synthesis, broadcast.
+    private func process(_ event: NoteEvent) async {
         // Track which notes are physically held down.
         if event.isOn && event.velocity > 0 {
             heldNotes.insert(event.note)

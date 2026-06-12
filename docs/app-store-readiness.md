@@ -24,21 +24,20 @@ keep everything.
 `CODE_SIGN_STYLE` live in `project.yml`. Bump `CURRENT_PROJECT_VERSION`
 on every App Store Connect upload.
 
-⬜ **Hardware dependency (Guideline 2.1) — biggest remaining risk.**
-Without a USB MIDI keyboard the reviewer cannot exercise the core flow.
-Mitigation plan, in order of impact:
-1. **Demo/simulation mode** (deferred by decision 2026-06-12, revisit
-   before submission). Feasibility sketch: the engine is wire-driven, so
-   either (a) a dev-style command that feeds the next expected note(s)
-   into `SessionCoordinator` as synthetic `SourcedNoteEvent`s, or (b) a
-   tappable on-screen keyboard in the web UI sending a `simulateNote`
-   command. Option (a) is smaller: one new wire command + a button.
-   Gate visibility however we like — reviewers just need *a* way to see
-   the lesson advance.
-2. **App Review notes**: state plainly that a USB MIDI keyboard (via
-   USB-C) is required, and provide a **demo video link** showing connect
-   → calibration → scale practice → completion stats.
-3. App Store description must also mention the keyboard requirement.
+✅ **Hardware dependency (Guideline 2.1) — demo mode shipped.**
+The on-screen keyboard strip is tappable whenever no physical keyboard
+is active (option (b): `simulateNote` wire command). The full lesson
+flow — mistakes, stats, completion, Reset — works from cold launch with
+zero MIDI involvement, so App Review can exercise the app without
+hardware. A hint line ("No keyboard connected — tap the keys on screen
+to practice") makes it discoverable.
+Remaining mitigations (App Store Connect, no code):
+1. **App Review notes**: a USB MIDI keyboard (via USB-C) is the primary
+   input, but the app is fully testable by tapping the on-screen keys;
+   include a **demo video link** showing connect → calibration → scale
+   practice → completion stats.
+2. App Store description should mention both: best with a USB MIDI
+   keyboard, works with on-screen keys.
 
 ## Medium items
 

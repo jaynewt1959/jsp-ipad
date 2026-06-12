@@ -106,6 +106,9 @@ export type Command =
   | { type: "startCalibration" }
   | { type: "cancelCalibration" }
   | { type: "skipCalibration" }
+  /** On-screen keyboard tap (demo mode). iPad-only command (not in Mac jsp).
+   *  Only honored server-side when no physical keyboard is active. */
+  | { type: "simulateNote"; note: number; isOn: boolean }
   | { type: "ping" };
 
 // ---------------------------------------------------------------------------

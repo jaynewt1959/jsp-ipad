@@ -45,7 +45,7 @@ idempotent) — never an infinite spinner (App Review rejects hangs).
 | `web/src/components/PracticePanel.tsx` | Main practice area: step label, keyboard strip, score, feedback, timing stats |
 | `web/src/components/KeyboardBar.tsx` | Device/range strip: calibration prompts, source picker, Recalibrate |
 | `web/src/util/availability.ts` | Which scale keys fit the calibrated keyboard range per hand mode |
-| `web/src/components/KeyboardStrip.tsx` | Piano keyboard display highlighting next expected note(s) |
+| `web/src/components/KeyboardStrip.tsx` | Piano keyboard display highlighting next expected note(s); tappable demo-mode input when no physical keyboard is active |
 | `web/src/components/score/ScaleScoreView.tsx` | Staff notation view of the current scale |
 
 ## Single-module target — critical difference from Mac
@@ -76,6 +76,10 @@ grand-staff score with per-note fingerings and a live highlight overlay.
 
 **Sidebar controls (top → bottom)**:
 - **Connect MIDI** — starts CoreMIDI + the lesson; toggles to Disconnect while running.
+  Connecting AND disconnecting both implicitly reset the practice session
+  (`handleStart`/`handleStopMidi` rewind) — required so demo-mode taps resume
+  after a disconnect even when the previous run had completed (completed
+  lessons ignore all input until a rewind).
 - **Practice Style** — Free or ♪ Timed.
 - **Tempo (BPM)** — 60 / 80 / 100 / 120 presets; active only in Timed.
 - **Practice Mode** — Left Hand / Right Hand / Both Hands.
@@ -110,6 +114,18 @@ no separate cycle scale-type selector. Cycle state (pool, index) lives in refs i
 `restartLesson` immediately.
 
 **Reset button**: restarts the current lesson without changing any other settings.
+Enabled whenever the WS is connected (works in demo mode — no MIDI needed).
+
+**On-screen keys (demo mode)**: the `KeyboardStrip` is tappable whenever no
+physical keyboard is active (covers cold launch — no Connect MIDI needed — and
+"connected with zero sources"). All keys are tappable; wrong taps count as
+mistakes. Both Hands steps are played with two sequential taps (engine handles
+`waitingForPartner`). Taps send the `simulateNote` command; the first tap
+anchors the run clock server-side via `rewindLesson()`. `KeyboardBar` shows
+"No keyboard connected — tap the keys on screen to practice" while active.
+Gating logic lives in `web/src/util/demoMode.ts` (`tapsEnabled`), mirrored by
+the server guard. **Ships in Release** — this is the App Review path
+(Guideline 2.1); do NOT put it behind `__DEV_TOOLS__`.
 
 **Analyze button**: sends `requestDebugLog` to the server. Disabled when MIDI is not
 running. **Dev builds only** — compiled out of Release via `__DEV_TOOLS__` (see
@@ -164,6 +180,12 @@ port to Mac later if desired):
    calibration }`; null range = unknown/full-size.
 4. Commands `setActiveSource` (payload `sourceName`), `startCalibration`,
    `cancelCalibration`, `skipCalibration`.
+5. Command `simulateNote` (payload `note`, `isOn`) — on-screen keyboard
+   taps (demo mode). Only honored server-side while no physical
+   keyboard is active (`!(midi.isRunning() && activeSource != nil)`);
+   taps share the real-MIDI pipeline in `SessionCoordinator.process`
+   with velocity fixed at 80, so `fixedVelocity` latches and the
+   evenness stat is suppressed.
 
 ## Keyboard range & calibration
 

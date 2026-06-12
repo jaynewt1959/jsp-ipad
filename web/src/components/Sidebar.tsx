@@ -251,10 +251,12 @@ export function Sidebar({
             ))}
           </div>
 
+          {/* Reset is meaningful with either input — physical MIDI or
+              on-screen taps (demo mode) — so gate only on the connection. */}
           <button
             className="btn btn--restart"
             onClick={onReset}
-            disabled={connection.kind !== "open" || !(midi?.running ?? false)}
+            disabled={connection.kind !== "open"}
           >
             Reset
           </button>

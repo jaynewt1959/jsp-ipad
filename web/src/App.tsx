@@ -13,6 +13,7 @@ import { minorVariantOf, isMinorKey, type MinorVariant } from "./data/scales";
 import {
   rangeFromKeyboard, availableKeyLabels, modeHasAnyKey, allKeysAvailable,
 } from "./util/availability";
+import { tapsEnabled } from "./util/demoMode";
 import type { HandMode } from "./types";
 import { Sidebar } from "./components/Sidebar";
 import { PracticePanel } from "./components/PracticePanel";
@@ -135,7 +136,10 @@ export default function App() {
   // ── Inactivity auto-reset ──────────────────────────────────────────────
   // TEMPORARILY DISABLED for debugging. Re-enable by restoring the useEffect below.
   const lastNoteOnMs = snapshot?.lesson.lastNoteOnMs ?? null;
-  const lessonActive = (snapshot?.midi.running ?? false) && !isCompleted;
+  // Lesson input is live with either source: physical MIDI when running,
+  // on-screen taps otherwise (demo mode) — so the metronome runs in both.
+  const inputLive = (snapshot?.midi.running ?? false) || tapsEnabled(snapshot?.midi);
+  const lessonActive = inputLive && !isCompleted;
   void lastNoteOnMs; void lessonActive; // suppress unused-var warnings while disabled
 
   const handleReset = () => {

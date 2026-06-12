@@ -5,6 +5,7 @@ import type { PlayMode } from "../hooks/usePersistedSettings";
 import { getScaleDescriptor } from "../data/scales";
 import { noteName, FLAT_KEY_SIGNATURES } from "../util/noteName";
 import { compositeScore } from "../util/compositeScore";
+import { tapsEnabled } from "../util/demoMode";
 import { HandStatusBadge } from "./HandStatusBadge";
 import { KeyboardStrip } from "./KeyboardStrip";
 import { KeyboardBar } from "./KeyboardBar";
@@ -31,6 +32,10 @@ export function PracticePanel({ snapshot, send, timing, timingStats, playMode, l
   const handsMode = lesson?.handsMode ?? "together";
   const showLeft  = handsMode !== "rightOnly";
   const showRight = handsMode !== "leftOnly";
+
+  // Demo mode: with no physical keyboard active, the on-screen keys
+  // are the input device.
+  const tapInput = tapsEnabled(snapshot?.midi);
 
   // Keyboard range: one semitone buffer outside the full note span of the
   // current scale so highlighted keys are never flush against the edge.
@@ -215,6 +220,8 @@ export function PracticePanel({ snapshot, send, timing, timingStats, playMode, l
           highlightRight={showRight ? (step?.rightNote  ?? null) : null}
           fingerLeft={showLeft  ? (step?.leftFinger  ?? null) : null}
           fingerRight={showRight ? (step?.rightFinger ?? null) : null}
+          tappable={tapInput}
+          onKey={(midi, isOn) => send({ type: "simulateNote", note: midi, isOn })}
         />
       </section>
 
