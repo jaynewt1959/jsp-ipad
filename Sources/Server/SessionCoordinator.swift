@@ -73,8 +73,11 @@ actor SessionCoordinator {
 
         /// Call when the hand correctly presses `newNote`.
         /// Returns `true` if the note from two steps ago is still held.
+        /// `prevNote == newNote` is always false-positive: a piano key
+        /// must be released before it can be re-pressed, so the note
+        /// can only be in `heldNotes` because we just inserted it.
         mutating func advance(newNote: Int, heldNotes: Set<Int>) -> Bool {
-            let stale = prevNote.map { heldNotes.contains($0) } ?? false
+            let stale = prevNote.map { $0 != newNote && heldNotes.contains($0) } ?? false
             prevNote = currentNote
             currentNote = newNote
             return stale
