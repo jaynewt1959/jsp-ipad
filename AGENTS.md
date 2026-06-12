@@ -16,16 +16,22 @@ USB MIDI keyboard
   → WKWebView → React UI (web/dist bundled in app)
 ```
 
-Port **8089** is hardcoded in `EngineHost.swift`; server binds to `127.0.0.1`
-(not `0.0.0.0` — iPad has no "local-network server" use case).
+The server binds `127.0.0.1` (not `0.0.0.0` — iPad has no
+"local-network server" use case) and tries ports **8089 → 8090 → 8091**
+in order (`EngineHost.candidatePorts`). `EngineHost` is a state machine
+(`idle / starting / running(port) / failed`); `ContentView` polls
+`EngineHost.shared.state`, confirms `/healthz`, then loads the actual
+port. If the engine fails or doesn't answer within ~12 s, ContentView
+shows an error screen with a Retry button (`ensureStarted()` is
+idempotent) — never an infinite spinner (App Review rejects hangs).
 
 ## Key files
 
 | File | Role |
 |------|------|
-| `JSPiPad/JSPiPadApp.swift` | `@main` SwiftUI entry, fires `EngineHost.shared.start()` as detached task |
-| `JSPiPad/ContentView.swift` | WKWebView wrapper; polls `/healthz` then loads `http://localhost:8089/` |
-| `JSPiPad/EngineHost.swift` | Starts Hummingbird, registers WS routes, finds `web/dist` in bundle |
+| `JSPiPad/JSPiPadApp.swift` | `@main` SwiftUI entry, fires `EngineHost.shared.ensureStarted()` as detached task |
+| `JSPiPad/ContentView.swift` | WKWebView wrapper; waits on `EngineHost.state` + `/healthz`, loads the active port; timeout → error + Retry |
+| `JSPiPad/EngineHost.swift` | Starts Hummingbird with port fallback, registers WS routes, finds `web/dist` in bundle, exposes `State` |
 | `Sources/Server/HTTPServer.swift` | `127.0.0.1` binding (differs from Mac which uses `0.0.0.0`) |
 | `Sources/Lesson/LessonEngine.swift` | Engine-internal `EngineState` enum (NOT `LessonState` — see below) |
 | `project.yml` | xcodegen spec — **source of truth** for the Xcode project |
@@ -75,7 +81,7 @@ grand-staff score with per-note fingerings and a live highlight overlay.
 - **Practice Mode** — Left Hand / Right Hand / Both Hands.
 - **Scale** — type + minor sub-type + 12-key grid (see **Scales** above).
 - **Direction** — ↑ Asc / ↓ Desc / ⇅ Both.
-- **Controls** — Once / Loop / Cycle; Random / Fifths (Cycle only); Reset; Analyze.
+- **Controls** — Once / Loop / Cycle; Random / Fifths (Cycle only); Reset; Analyze (dev builds only).
 
 **Practice Style**: Free (no timing evaluation) or Timed (metronome + eighth-note grid scoring).
 
@@ -105,11 +111,27 @@ no separate cycle scale-type selector. Cycle state (pool, index) lives in refs i
 
 **Reset button**: restarts the current lesson without changing any other settings.
 
-**Analyze button**: sends `requestDebugLog` to the server. Disabled when MIDI is not running.
+**Analyze button**: sends `requestDebugLog` to the server. Disabled when MIDI is not
+running. **Dev builds only** — compiled out of Release via `__DEV_TOOLS__` (see
+"Release vs Debug builds" below).
 
 **Build timestamp bar**: thin bar at the top of PracticePanel showing `Build: {__BUILD_TIME__}`
-(injected by Vite). Intentionally left in — useful for confirming the app on-device
-matches the latest build. (The earlier last-WS-command readout was removed.)
+(injected by Vite). Useful for confirming the app on-device matches the latest build.
+**Dev builds only** — compiled out of Release via `__DEV_TOOLS__`. (The earlier
+last-WS-command readout was removed.)
+
+## Release vs Debug builds (App Store hygiene)
+
+The Xcode preBuildScript passes `VITE_APP_CONFIG="$CONFIGURATION"` to
+`npm run build`. In `web/vite.config.ts`, `VITE_APP_CONFIG=Release`
+sets the compile-time constant `__DEV_TOOLS__` to `false` and disables
+source maps. `__DEV_TOOLS__` gates the build-timestamp bar
+(`PracticePanel.tsx`), the Analyze button (`Sidebar.tsx`), and the
+`DebugPanel` render (`App.tsx`) — all stripped from App Store builds by
+dead-code elimination. Xcode Debug builds and manual `npm run build`
+(no env var) keep them. Don't add user-visible debug UI outside the
+`__DEV_TOOLS__` gate — App Review reads visible build stamps/debug
+tools as "beta app" (Guideline 2.2).
 
 ## Wire contract — keep two files in sync
 
@@ -206,6 +228,12 @@ Key gotchas:
   a build warning and it gets overwritten anyway.
 - `UIUserInterfaceStyle: Dark` forces the whole app (including the
   `UILaunchScreen` background) to dark mode.
+- **Versioning**: `CFBundleShortVersionString`/`CFBundleVersion` are
+  wired to `$(MARKETING_VERSION)`/`$(CURRENT_PROJECT_VERSION)` — bump
+  those in `project.yml` `settings:` (the plist is regenerated).
+  Increment `CURRENT_PROJECT_VERSION` on every App Store Connect upload.
+- **Signing**: `DEVELOPMENT_TEAM` + `CODE_SIGN_STYLE: Automatic` live in
+  `project.yml` so regeneration doesn't wipe the team set in Xcode.
 
 ## App icon
 

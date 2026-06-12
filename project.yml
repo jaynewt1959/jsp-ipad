@@ -34,6 +34,11 @@ targets:
       path: JSPiPad/Info.plist
       properties:
         CFBundleDisplayName: JSP
+        # Versions live in build settings (MARKETING_VERSION /
+        # CURRENT_PROJECT_VERSION below) — bump them there, never in
+        # the generated Info.plist.
+        CFBundleShortVersionString: "$(MARKETING_VERSION)"
+        CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
         LSRequiresIPhoneOS: true
         UIRequiresFullScreen: true
         "UISupportedInterfaceOrientations~ipad":
@@ -56,6 +61,15 @@ targets:
         PRODUCT_NAME: JSPiPad
         ENABLE_HARDENED_RUNTIME: NO
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        # App Store versioning — single source of truth. Bump
+        # MARKETING_VERSION for user-facing releases and increment
+        # CURRENT_PROJECT_VERSION on every App Store Connect upload.
+        MARKETING_VERSION: "1.0"
+        CURRENT_PROJECT_VERSION: "1"
+        # Signing — kept here so `xcodegen generate` doesn't wipe the
+        # team that was previously set manually in Xcode.
+        CODE_SIGN_STYLE: Automatic
+        DEVELOPMENT_TEAM: 2U6V9ARN9F
 
     sources:
       - path: JSPiPad
@@ -78,7 +92,9 @@ targets:
           echo "let BUILD_TIMESTAMP = \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"" >> "$SRCROOT/JSPiPad/BuildTimestamp.swift"
           cd "$SRCROOT/web"
           npm install --silent
-          npm run build
+          # Release builds strip dev tooling (build bar, Analyze) and
+          # source maps — see web/vite.config.ts.
+          VITE_APP_CONFIG="$CONFIGURATION" npm run build
 
     postBuildScripts:
       - name: "Copy Web UI to Bundle"

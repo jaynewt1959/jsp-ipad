@@ -7,7 +7,8 @@
 //  the Mac CLI engine — same logic, no CLI argument parsing.
 //
 //  Static files (web/dist) are served from the app bundle.
-//  Port is hardcoded to 8089.
+//  Ports 8089 → 8090 → 8091 are tried in order; ContentView reads
+//  the actual port from `state` rather than hardcoding it.
 //
 import Foundation
 import Hummingbird
@@ -16,10 +17,36 @@ import HummingbirdWebSocket
 actor EngineHost {
 
     static let shared = EngineHost()
-    private let port = 8089
 
-    // Runs forever — call once from JSPiPadApp.init via Task.detached.
-    func start() async {
+    /// Lifecycle of the embedded server, observed by ContentView.
+    enum State {
+        case idle
+        case starting
+        case running(port: Int)
+        case failed(String)
+    }
+
+    private(set) var state: State = .idle
+
+    /// Ports tried in order. 8089 is the historical default; the
+    /// fallbacks cover the unlikely case where another app on the
+    /// device has already bound it (loopback ports are shared
+    /// device-wide on iOS).
+    private static let candidatePorts = [8089, 8090, 8091]
+
+    /// True while a serve loop is active (starting or running).
+    private var serving = false
+
+    /// Start the engine unless it is already starting/running.
+    /// Idempotent — called from JSPiPadApp.init and the Retry button.
+    func ensureStarted() {
+        guard !serving else { return }
+        serving = true
+        state = .starting
+        Task { await self.run() }
+    }
+
+    private func run() async {
         let hub         = WebSocketHub()
         let midi        = MidiInput()
         let coordinator = SessionCoordinator(hub: hub, midi: midi)
@@ -117,15 +144,25 @@ actor EngineHost {
             return nil
         }()
 
-        let config = ServerConfig(port: port, staticDir: staticDir, devMode: false)
-
-        do {
-            let app = try makeApplication(config: config, webSocketRouter: webSocketRouter)
-            try await app.runService()
-        } catch {
-            // Log but don't crash — server startup failure is visible
-            // via the WKWebView not loading.
-            NSLog("EngineHost: server failed — %@", error.localizedDescription)
+        // Try each candidate port until one serves. The bind happens
+        // inside runService(), so `.running` is set optimistically;
+        // ContentView confirms liveness via /healthz before loading
+        // the UI, so a failed bind is never user-visible.
+        var lastError = "The practice engine could not start."
+        for port in Self.candidatePorts {
+            do {
+                let config = ServerConfig(port: port, staticDir: staticDir, devMode: false)
+                let app = try makeApplication(config: config, webSocketRouter: webSocketRouter)
+                state = .running(port: port)
+                try await app.runService()
+                // runService() returning means the server shut down.
+                lastError = "The practice engine stopped unexpectedly."
+            } catch {
+                lastError = error.localizedDescription
+                NSLog("EngineHost: port %ld failed — %@", port, error.localizedDescription)
+            }
         }
+        state = .failed(lastError)
+        serving = false
     }
 }

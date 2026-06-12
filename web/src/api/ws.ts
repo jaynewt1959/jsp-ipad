@@ -90,15 +90,17 @@ export class JspClient {
 
 /// Derive the WebSocket URL from the current page.
 ///
-/// In production the engine serves both the static UI and `/ws` on
-/// the same port, so we can use `window.location.host` directly.
+/// In production the embedded engine serves both the static UI and
+/// `/ws` on the same loopback port (it binds 127.0.0.1 only), so we
+/// can use `window.location.host` directly — whichever port the
+/// engine actually bound, the page was loaded from it.
 ///
 /// In dev mode the Vite server runs on :5173 but the engine's
 /// WebSocket is on :8089. Rather than routing through Vite's proxy
 /// (which breaks when the client is on a different host, e.g. iPad
 /// on the LAN), we connect directly to the engine port on the same
-/// hostname. The engine binds to 0.0.0.0 so it is reachable from
-/// any network interface.
+/// hostname. (That LAN setup applies to the Mac dev engine, which
+/// binds 0.0.0.0; the iPad engine is in-process only.)
 export function defaultWebSocketUrl(): string {
   const proto = window.location.protocol === "https:" ? "wss:" : "ws:";
   const host = window.location.hostname;

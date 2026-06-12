@@ -258,13 +258,15 @@ export function Sidebar({
           >
             Reset
           </button>
-          <button
-            className="btn btn--debug"
-            onClick={() => send({ type: "requestDebugLog" })}
-            disabled={connection.kind !== "open" || !(midi?.running ?? false)}
-          >
-            Analyze
-          </button>
+          {__DEV_TOOLS__ && (
+            <button
+              className="btn btn--debug"
+              onClick={() => send({ type: "requestDebugLog" })}
+              disabled={connection.kind !== "open" || !(midi?.running ?? false)}
+            >
+              Analyze
+            </button>
+          )}
         </div>
       </section>
     </aside>

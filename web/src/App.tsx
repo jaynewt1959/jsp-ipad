@@ -193,7 +193,7 @@ export default function App() {
         cycleAvailable={cycleAvailable}
       />
       <PracticePanel snapshot={snapshot} send={send} timing={timing} timingStats={timingStats} playMode={playMode} loopCountdown={loopCountdown} manualResetSeq={manualResetSeq} />
-      {debugLog && (
+      {__DEV_TOOLS__ && debugLog && (
         <DebugPanel log={debugLog} onClose={clearDebugLog} />
       )}
       {toast && (

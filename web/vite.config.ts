@@ -14,10 +14,18 @@ import react from "@vitejs/plugin-react";
 //
 // The dev server binds 0.0.0.0 so an iPad on the same network can
 // reach `http://<mac-hostname>.local:5173` for live reload.
+// App Store builds must not show dev tooling (build-timestamp bar,
+// Analyze button, debug panel) or ship source maps. The Xcode
+// preBuildScript passes VITE_APP_CONFIG=$CONFIGURATION, so archive
+// builds (Release) strip them; Xcode Debug builds and manual
+// `npm run build` keep them.
+const releaseBuild = process.env.VITE_APP_CONFIG === "Release";
+
 export default defineConfig({
   plugins: [react()],
   define: {
-    __BUILD_TIME__: JSON.stringify(new Date().toISOString().slice(0, 16).replace("T", " "))
+    __BUILD_TIME__: JSON.stringify(new Date().toISOString().slice(0, 16).replace("T", " ")),
+    __DEV_TOOLS__: JSON.stringify(!releaseBuild)
   },
   server: {
     host: true,
@@ -34,6 +42,6 @@ export default defineConfig({
   build: {
     outDir: "dist",
     emptyOutDir: true,
-    sourcemap: true
+    sourcemap: !releaseBuild
   }
 });

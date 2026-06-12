@@ -32,10 +32,10 @@
 /* Begin PBXFileReference section */
 		086DEF4A68C708DF7B211420 /* EngineHost.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EngineHost.swift; sourceTree = "<group>"; };
 		10DCCAB35F6A79631DD2E04B /* SessionCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionCoordinator.swift; sourceTree = "<group>"; };
-		1C48308B9C8D12972007B1F3 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		1C48308B9C8D12972007B1F3 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		24AE5917ADF6270330108F56 /* HTTPServer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HTTPServer.swift; sourceTree = "<group>"; };
 		351541C349ED1B571170521C /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
-		374E26EC95281195F5AE38EC /* JSPiPad.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = JSPiPad.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		374E26EC95281195F5AE38EC /* JSPiPad.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = JSPiPad.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		37BCB24FE78ABDA5C06BB96B /* Wire.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Wire.swift; sourceTree = "<group>"; };
 		42E2B6D122715EC1368E0C34 /* BuildTimestamp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BuildTimestamp.swift; sourceTree = "<group>"; };
 		6C50396CFBEE5752B8322C17 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
@@ -168,6 +168,12 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = YES;
 				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+					B4DA729BDF9B9DF711B38873 = {
+						DevelopmentTeam = 2U6V9ARN9F;
+						ProvisioningStyle = Automatic;
+					};
+				};
 			};
 			buildConfigurationList = 396A669D40F465331FF10C9F /* Build configuration list for PBXProject "JSPiPad" */;
 			developmentRegion = en;
@@ -221,7 +227,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "set -e\necho \"// Auto-generated — do not edit\" > \"$SRCROOT/JSPiPad/BuildTimestamp.swift\"\necho \"let BUILD_TIMESTAMP = \\\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\\\"\" >> \"$SRCROOT/JSPiPad/BuildTimestamp.swift\"\ncd \"$SRCROOT/web\"\nnpm install --silent\nnpm run build\n";
+			shellScript = "set -e\necho \"// Auto-generated — do not edit\" > \"$SRCROOT/JSPiPad/BuildTimestamp.swift\"\necho \"let BUILD_TIMESTAMP = \\\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\\\"\" >> \"$SRCROOT/JSPiPad/BuildTimestamp.swift\"\ncd \"$SRCROOT/web\"\nnpm install --silent\n# Release builds strip dev tooling (build bar, Analyze) and\n# source maps — see web/vite.config.ts.\nVITE_APP_CONFIG=\"$CONFIGURATION\" npm run build\n";
 		};
 		DF84594AB26C701D0A35544C /* Copy Web UI to Bundle */ = {
 			isa = PBXShellScriptBuildPhase;
@@ -275,6 +281,8 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 2U6V9ARN9F;
 				ENABLE_HARDENED_RUNTIME = NO;
 				INFOPLIST_FILE = JSPiPad/Info.plist;
@@ -283,6 +291,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
+				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.jamien.JSPiPad;
 				PRODUCT_NAME = JSPiPad;
 				SDKROOT = iphoneos;
@@ -415,6 +424,8 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 2U6V9ARN9F;
 				ENABLE_HARDENED_RUNTIME = NO;
 				INFOPLIST_FILE = JSPiPad/Info.plist;
@@ -423,6 +434,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
+				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.jamien.JSPiPad;
 				PRODUCT_NAME = JSPiPad;
 				SDKROOT = iphoneos;

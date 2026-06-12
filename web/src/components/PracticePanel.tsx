@@ -160,7 +160,9 @@ export function PracticePanel({ snapshot, send, timing, timingStats, playMode, l
 
   return (
     <main className="practice">
-      <div className="practice__debug-bar">Build: {__BUILD_TIME__}</div>
+      {__DEV_TOOLS__ && (
+        <div className="practice__debug-bar">Build: {__BUILD_TIME__}</div>
+      )}
       <header className="practice__header">
         <h1 className="practice__step">{stepLabel}</h1>
         <div className="practice__progress" aria-hidden>

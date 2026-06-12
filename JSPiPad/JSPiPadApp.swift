@@ -12,7 +12,7 @@ struct JSPiPadApp: App {
 
     init() {
         Task.detached(priority: .background) {
-            await EngineHost.shared.start()
+            await EngineHost.shared.ensureStarted()
         }
     }
 
