@@ -129,13 +129,24 @@ Gating logic lives in `web/src/util/demoMode.ts` (`tapsEnabled`), mirrored by
 the server guard. Taps sound a synthesized piano-ish tone pitched at the
 tapped key (`web/src/audio/tapSynth.ts` — hold-aware envelope, ~1.5 s decay
 cap, quick release on lift; separate AudioContext from the metronome's).
-The audio pipeline is pre-warmed at app load (`warmUpTapSynth()` from App
-mount) and depends on `ContentView.swift` setting the WKWebView's
-`mediaTypesRequiringUserActionForPlayback = []` — do not remove either, or
-the first tap goes silent (suspended-clock race).
+The audio pipeline is pre-warmed at page load (`warmUpTapSynth()` from
+`main.tsx`, before React renders) and depends on `ContentView.swift` setting
+the WKWebView's `mediaTypesRequiringUserActionForPlayback = []` — do not
+remove either. The warm-up tone must stay *audible-class* (30 Hz at
+non-trivial gain — inaudible on iPad speakers): WebKit only activates the
+system audio session for audible output, and deferring that activation to
+the first real note causes a UI hitch right after the first tap.
 Every tap sounds, wrong notes included; audio is tap-only since physical
 keyboards make their own sound. **Ships in Release** — this is the App
 Review path (Guideline 2.1); do NOT put it behind `__DEV_TOOLS__`.
+
+**Begin overlay**: full-screen "Tap anywhere to begin" on every launch
+(`primed` state in `App.tsx`). iOS arbitrates the FIRST touch after app
+launch through a system gesture gate that holds it ~0.5 s and flushes it
+late ("System gesture gate timed out") — it swallowed/skipped the first
+key press. The gate cannot be disabled (setting `delaysTouchesBegan` on it
+is rejected by iOS as "unsupported"); the overlay's dismissal tap absorbs
+the one-time arbitration and doubles as an audio unlock. Do NOT remove.
 
 **Analyze button**: sends `requestDebugLog` to the server. Disabled when MIDI is not
 running. **Dev builds only** — compiled out of Release via `__DEV_TOOLS__` (see
@@ -298,6 +309,12 @@ padding: calc(Npx + env(safe-area-inset-top)) ...
 
 Applied to `.sidebar` and `.practice` in `web/src/styles.css`.
 `viewport-fit=cover` is already set in `web/index.html`.
+
+`JSPiPadApp` also sets `.defersSystemGestures(on: .bottom)`: the
+on-screen piano lives in the bottom edge-swipe zone, and without
+deferral iOS gates the first touch there for ~0.5 s ("System gesture
+gate timed out") — felt as a stuck first key in demo mode. Don't
+remove it.
 
 ## Build commands
 

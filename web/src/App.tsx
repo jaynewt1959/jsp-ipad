@@ -23,9 +23,14 @@ import { DebugPanel } from "./components/DebugPanel";
 export default function App() {
   const { snapshot, status, send: sessionSend, debugLog, clearDebugLog } = useSession();
 
-  // Pre-warm the tap-synth audio pipeline so the first on-screen key
-  // press sounds immediately (see tapSynth.ts).
-  useEffect(() => { warmUpTapSynth(); }, []);
+  // ── First-touch gate ("Tap anywhere to begin") ────────────────────
+  // iOS arbitrates the FIRST touch after app launch through a system
+  // gesture gate that can hold it for ~0.5 s and flush it late — which
+  // swallowed/skipped the first key press. The gate cannot be disabled
+  // (see ContentView.swift), but it arbitrates exactly once: this
+  // overlay spends that first touch harmlessly. Its dismissal is also
+  // a genuine user gesture, so it doubles as an audio unlock.
+  const [primed, setPrimed] = useState(false);
 
   // ── Toast notification ─────────────────────────────────────────────────
   const [toast, setToast] = useState<string | null>(null);
@@ -208,6 +213,18 @@ export default function App() {
       {toast && (
         <div className="auto-toast" role="status" aria-live="polite">
           {toast}
+        </div>
+      )}
+      {!primed && (
+        <div
+          className="begin-overlay"
+          onPointerUp={() => {
+            warmUpTapSynth();
+            setPrimed(true);
+          }}
+        >
+          <div className="begin-overlay__title">JSP</div>
+          <div className="begin-overlay__hint">Tap anywhere to begin</div>
         </div>
       )}
     </div>

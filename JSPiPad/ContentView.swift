@@ -117,6 +117,15 @@ struct ContentView: View {
 
 // MARK: -
 
+// Note on iOS's "system gesture gate": the window carries
+// `UISystemGestureGateGestureRecognizer`s that arbitrate the FIRST
+// touch after launch (~0.5 s hold, "System gesture gate timed out" in
+// the console). They cannot be disarmed — setting their
+// `delaysTouchesBegan` is explicitly rejected ("unsupported and will
+// have undesired side effects") and edge-gesture deferral does not
+// stop them. Instead the web UI shows a "Tap anywhere to begin"
+// overlay on launch whose dismissal tap absorbs the one-time
+// arbitration, so the first real key press is never swallowed.
 struct WebViewContainer: UIViewRepresentable {
 
     let port: Int
@@ -134,6 +143,16 @@ struct WebViewContainer: UIViewRepresentable {
         let webView = WKWebView(frame: .zero, configuration: config)
         webView.backgroundColor = .black
         webView.isOpaque = false
+        // Kill native touch arbitration that can hold back touch
+        // events from the page — seen as the first tap's pointerup
+        // arriving ~0.5 s late (stuck key in demo mode). Link preview
+        // installs long-press recognizers; the scroll view delays
+        // content touches by default. The page is a fixed-viewport
+        // app (100dvh grid, internal overflow only), so outer
+        // scrolling is unused.
+        webView.allowsLinkPreview = false
+        webView.scrollView.isScrollEnabled = false
+        webView.scrollView.delaysContentTouches = false
         if let url = URL(string: "http://localhost:\(port)/") {
             webView.load(URLRequest(url: url))
         }

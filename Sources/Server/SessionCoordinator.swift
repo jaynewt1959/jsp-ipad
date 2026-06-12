@@ -354,6 +354,7 @@ actor SessionCoordinator {
     /// the lesson; feeds the exact same pipeline as real MIDI so
     /// mistakes, stats, legato, and the event log behave identically.
     func handleSimulateNote(note: Int, isOn: Bool) async {
+        let t0 = DispatchTime.now()
         // A physical keyboard owns the lesson — ignore taps. (This
         // also guarantees calibration is idle: calibration only runs
         // while a physical source is active.)
@@ -372,6 +373,13 @@ actor SessionCoordinator {
             timestampNs: 0  // sync metrics use the wall-clock fallback
         )
         await process(event)
+
+        // Diagnostic: surface slow tap handling (seen as a delayed
+        // next-key highlight). Normal handling is well under 5 ms.
+        let ms = Double(DispatchTime.now().uptimeNanoseconds - t0.uptimeNanoseconds) / 1_000_000
+        if ms >= 20 {
+            NSLog("SessionCoordinator: simulateNote(%ld) took %.0f ms", note, ms)
+        }
     }
 
     /// Shared pipeline for real and simulated note events: held-note

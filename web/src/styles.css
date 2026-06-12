@@ -776,6 +776,35 @@ body {
   filter: brightness(0.72);
 }
 
+/* ===== Begin overlay (absorbs iOS's one-time first-touch gate) =========== */
+
+.begin-overlay {
+  position: fixed;
+  inset: 0;
+  background: var(--bg);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  z-index: 100;
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.begin-overlay__title {
+  font-size: 56px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.begin-overlay__hint {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--amber);
+}
+
 /* ===== Results overlay =================================================== */
 
 .results-overlay {

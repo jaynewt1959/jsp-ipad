@@ -102,26 +102,35 @@ export function tapNoteOff(midi: number): void {
   stopVoice(midi, false);
 }
 
-/** Pre-warm the audio pipeline at app load (called from App mount).
- *  The WKWebView host sets `mediaTypesRequiringUserActionForPlayback`
- *  to none, so the context starts immediately; a near-silent priming
- *  voice forces the output route to open. Without this, the first
- *  real tap paid the whole spin-up cost inside the pointer event:
- *  the context's clock was still frozen, the release ramp clobbered
- *  the attack, and the first note was swallowed. In a plain desktop
- *  browser (dev) autoplay may be blocked — then this is a harmless
- *  no-op and the first tap's `ensureContext()` resume takes over. */
+/** Pre-warm the audio pipeline at page load (called from main.tsx,
+ *  before React renders). Two jobs:
+ *  1. Create + resume the AudioContext — the WKWebView host sets
+ *     `mediaTypesRequiringUserActionForPlayback` to none, so this
+ *     succeeds without a user gesture. (Lazy creation inside the
+ *     pointer event used to swallow the first note: frozen clock,
+ *     release ramp clobbering the attack.)
+ *  2. Render a priming tone that WebKit classifies as *audible*.
+ *     The system audio session is only activated once a context
+ *     produces audible output — a near-zero-gain warm-up counts as
+ *     silent, deferring the activation stall (a ~100–300 ms
+ *     main-thread hitch) to the first real note, which showed up as
+ *     the UI freezing right after the first tap. 30 Hz is below what
+ *     iPad speakers can reproduce, so the tone is effectively silent
+ *     to the user while still counting as audible output.
+ *  In a plain desktop browser (dev) autoplay may be blocked — then
+ *  this is a harmless no-op and the first tap's `ensureContext()`
+ *  resume takes over. */
 export function warmUpTapSynth(): void {
   const env = ensureContext();
   if (!env) return;
   const { c, m } = env;
   const osc = c.createOscillator();
   const g = c.createGain();
-  g.gain.value = 0.0001;
-  osc.frequency.value = 440;
+  g.gain.value = 0.04;
+  osc.frequency.value = 30;
   osc.connect(g);
   g.connect(m);
   const now = c.currentTime;
   osc.start(now);
-  osc.stop(now + 0.03);
+  osc.stop(now + 0.15);
 }

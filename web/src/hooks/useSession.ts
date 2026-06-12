@@ -5,6 +5,7 @@ import {
   type ConnectionStatus
 } from "../api/ws";
 import type { Command, Snapshot, DebugLogMessage } from "../types";
+import { markSnapshotReceived } from "../util/tapLatency";
 
 /// Single source of truth for the page: subscribes to the engine
 /// WebSocket and surfaces the latest snapshot + connection status.
@@ -18,7 +19,10 @@ export function useSession(url: string = defaultWebSocketUrl()) {
   useEffect(() => {
     const client = new JspClient({
       url,
-      onSnapshot: (s) => setSnapshot(s),
+      onSnapshot: (s) => {
+        markSnapshotReceived();
+        setSnapshot(s);
+      },
       onDebugLog: (log) => setDebugLog(log),
       onStatus: (s) => setStatus(s)
     });

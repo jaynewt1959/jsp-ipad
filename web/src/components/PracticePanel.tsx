@@ -7,6 +7,10 @@ import { noteName, FLAT_KEY_SIGNATURES } from "../util/noteName";
 import { compositeScore } from "../util/compositeScore";
 import { tapsEnabled } from "../util/demoMode";
 import { tapNoteOn, tapNoteOff } from "../audio/tapSynth";
+import {
+  markTapSent, lastTapLatencyMs,
+  markPressStart, markPressEnd, lastPressDurationMs,
+} from "../util/tapLatency";
 import { HandStatusBadge } from "./HandStatusBadge";
 import { KeyboardStrip } from "./KeyboardStrip";
 import { KeyboardBar } from "./KeyboardBar";
@@ -88,20 +92,20 @@ export function PracticePanel({ snapshot, send, timing, timingStats, playMode, l
     return "#ea580c"; // orange-600  clearly off
   })();
 
-  // Timing stats: show when there's enough data.
-  // Always shown on completion; shown mid-lesson only once we have 5+ notes.
-  // Memoised on primitives so the latch effect below doesn't loop on
-  // a fresh array identity every render.
+  // Timing stats: shown once, when the run completes (the latch below
+  // keeps them visible through loop/cycle restarts until the next run's
+  // first note). All three buckets always appear — "Late 0%" is
+  // information, not noise. Memoised on primitives so the latch effect
+  // below doesn't loop on a fresh array identity every render.
   const isCompleted = lesson?.isCompleted ?? false;
   const statsParts = useMemo<StatPart[] | null>(() => {
-    if (timingStats.total === 0) return null;
-    if (timingStats.total < 5 && !isCompleted) return null;
+    if (!isCompleted || timingStats.total === 0) return null;
     const pct = (n: number) => `${Math.round(n / timingStats.total * 100)}%`;
-    const parts: StatPart[] = [];
-    if (timingStats.early  > 0) parts.push({ kind: "early",  text: `Early ${pct(timingStats.early)}` });
-    parts.push({ kind: "ontime", text: `On time ${pct(timingStats.onTime)}` });
-    if (timingStats.late   > 0) parts.push({ kind: "late",   text: `Late ${pct(timingStats.late)}` });
-    return parts;
+    return [
+      { kind: "early",  text: `Early ${pct(timingStats.early)}` },
+      { kind: "ontime", text: `On time ${pct(timingStats.onTime)}` },
+      { kind: "late",   text: `Late ${pct(timingStats.late)}` },
+    ];
   }, [timingStats.early, timingStats.onTime, timingStats.late, timingStats.total, isCompleted]);
 
   // Shown in the feedback line when the lesson is complete.
@@ -184,7 +188,11 @@ export function PracticePanel({ snapshot, send, timing, timingStats, playMode, l
   return (
     <main className="practice">
       {__DEV_TOOLS__ && (
-        <div className="practice__debug-bar">Build: {__BUILD_TIME__}</div>
+        <div className="practice__debug-bar">
+          Build: {__BUILD_TIME__}
+          {lastTapLatencyMs() != null && ` \u00b7 tap\u2192snap: ${lastTapLatencyMs()}ms`}
+          {lastPressDurationMs() != null && ` \u00b7 press: ${lastPressDurationMs()}ms`}
+        </div>
       )}
       <header className="practice__header">
         <h1 className="practice__step">{stepLabel}</h1>
@@ -243,8 +251,14 @@ export function PracticePanel({ snapshot, send, timing, timingStats, playMode, l
             // Audible feedback for every tap (wrong notes included),
             // like a real piano. Tap-only — physical keyboards make
             // their own sound.
-            if (isOn) tapNoteOn(midi);
-            else tapNoteOff(midi);
+            if (isOn) {
+              tapNoteOn(midi);
+              markTapSent();
+              markPressStart();
+            } else {
+              tapNoteOff(midi);
+              markPressEnd();
+            }
             send({ type: "simulateNote", note: midi, isOn });
           }}
         />
@@ -259,6 +273,7 @@ export function PracticePanel({ snapshot, send, timing, timingStats, playMode, l
           if (!stats) return null;
           return (
             <p className="practice__timing-stats">
+              {"Timing: "}
               {stats.map((part, i) => (
                 <span key={part.kind}>
                   {i > 0 && " \u00b7 "}
