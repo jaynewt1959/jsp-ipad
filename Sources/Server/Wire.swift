@@ -74,14 +74,13 @@ public struct LessonState: Encodable, Sendable {
     /// Unix-epoch ms when the most recent *correct* note-on arrived.
     /// nil until the user has played at least one correct note in this run.
     public let lastNoteOnMs: Int64?
-    /// Step index the score view should highlight. Advances on both
-    /// `.advanced` and `.legatoPrepress` so the green ellipse tracks
-    /// the physically-pressed note even before the engine advances.
+    /// Step index the score view should highlight.
     public let displayStepIndex: Int
-    /// Number of `.alreadySatisfied` events for the active hand since
-    /// the last rewind — i.e. notes re-pressed while still being held.
-    /// Counted toward the accuracy score alongside wrong-note mistakes.
-    public let alreadySatisfiedCount: Int
+    /// Count of stale-note precision demerits since the last rewind.
+    /// Incremented when a hand presses step N while still physically
+    /// holding the note from step N-2. One-step overlap is valid legato;
+    /// two-step overlap counts as imprecise technique.
+    public let stalenessCount: Int
     /// Average milliseconds between first and second hand arriving on the
     /// same step, in `.together` mode. nil until at least one step completes
     /// or in single-hand modes.

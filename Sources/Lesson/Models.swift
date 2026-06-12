@@ -213,54 +213,33 @@ public struct NoteEvent: Equatable, Codable {
 /// step, scoped to the hand the engine attributed it to.
 ///
 /// - `.correct`: right note-on for that hand at this step. The hand
-///   is now in `.pressed` phase — holding the key, waiting for the
-///   release before the engine can advance.
-/// - `.released`: the hand has now released the correct note. The
-///   hand is in `.released` phase. The engine advances only once
-///   every required hand reaches this state.
+///   is now `.satisfied` — waiting for the partner hand (if any)
+///   before the engine advances. No release required.
 /// - `.wrongNote`: that hand's note didn't match. `expected` is what
-///   the lesson wanted, `played` is what arrived.
+///   the lesson wanted, `played` is what arrived. The hand stays
+///   `.pending` so the user can try again.
 /// - `.handNotRequired`: this step doesn't expect this hand to play.
-/// - `.alreadySatisfied`: this hand has already begun (or completed)
-///   its press/release cycle for the current step; the incoming
-///   event is a duplicate or part of the same physical key event.
-/// - `.legatoPrepress`: the hand pressed the correct note for the
-///   *next* step while still holding the current step's note. The
-///   press is acknowledged (no phase change) so the coordinator can
-///   show positive feedback. The engine relies on the coordinator to
-///   synthesise a fresh note-on for this hand once the engine
-///   actually advances to that step.
-/// - `.advanced`: emitted when both required hands have completed
-///   their press-release cycle and the engine has moved to the next
-///   step (or completed). Carries the new step index, or nil if the
-///   lesson is finished.
+/// - `.advanced`: emitted when every required hand is satisfied and
+///   the engine moves to the next step (or completes). Carries the
+///   new step index, or nil if the lesson is finished.
 public enum StepResult: Equatable {
     case correct(hand: HandSide, stepIndex: Int)
-    case released(hand: HandSide, stepIndex: Int)
     case wrongNote(hand: HandSide, stepIndex: Int, expected: Int, played: Int)
     case handNotRequired(hand: HandSide, stepIndex: Int)
-    case alreadySatisfied(hand: HandSide, stepIndex: Int)
-    case legatoPrepress(hand: HandSide, stepIndex: Int)
     case advanced(toStepIndex: Int?)
     case lessonNotStarted
 }
 
 // MARK: - Hand phase
 
-/// Per-hand progress through one step's press-release cycle. The
-/// engine refuses to advance until every required hand reaches
-/// `.released`.
+/// Per-hand progress through the current step.
+/// The engine advances as soon as every required hand is `.satisfied`.
 public enum HandPhase: Equatable {
     /// Nothing has happened on this hand for the current step.
     case pending
-    /// The hand played the correct note-on and is currently holding
-    /// the key. The associated value is the MIDI note number we are
-    /// waiting to see released.
-    case pressed(note: Int)
-    /// The hand has played the correct note-on and then the matching
-    /// note-off. Waiting for the partner hand to reach the same
-    /// state before the engine advances.
-    case released
+    /// The hand played the correct note-on. Waiting for the partner
+    /// hand (if any) before the engine advances.
+    case satisfied
 }
 
 // MARK: - Hand attribution

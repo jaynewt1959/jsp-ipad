@@ -6,18 +6,16 @@
 //  whether the user has played the right note for the right hand at
 //  the right step. Pure-Swift: no MIDI, no UI.
 //
-//  Press-release semantics
-//  -----------------------
-//  Each step expects a full *press-release cycle* per required hand:
+//  Advancement semantics
+//  ---------------------
+//  Each step requires a correct note-on from every required hand.
+//  Note-offs are irrelevant to advancement; stale-note precision
+//  tracking is handled separately in SessionCoordinator.
 //
-//      .pending  --(correct note-on)-->  .pressed(note: N)
-//      .pressed  --(matching note-off)-->  .released
+//      .pending  --(correct note-on)-->  .satisfied
 //
-//  The engine only advances to the next step once *every* required
-//  hand reaches `.released`. This matches musical practice (you
-//  press, hold, then release) and avoids spurious "wrong note" errors
-//  caused by note-offs arriving while the hand is still on the
-//  previous step's chord.
+//  The engine advances to the next step once every required hand
+//  reaches `.satisfied`.
 //
 import Foundation
 
@@ -62,7 +60,7 @@ public final class LessonEngine {
     public private(set) var lesson: ScaleLesson?
     public private(set) var currentStepIndex: Int = 0
 
-    /// Per-hand phase through the current step's press-release cycle.
+    /// Per-hand phase through the current step.
     private var phase: [HandSide: HandPhase] = [.left: .pending, .right: .pending]
 
     public var state: EngineState {
@@ -82,11 +80,9 @@ public final class LessonEngine {
         phase[hand] ?? .pending
     }
 
-    /// Backwards-compatible helper: a hand is "satisfied" once it has
-    /// completed its press-release cycle. (Pressed-but-not-released
-    /// is **not** considered satisfied for advancement purposes.)
+    /// True once the hand has played the correct note-on for the current step.
     public func isSatisfied(_ hand: HandSide) -> Bool {
-        phase(hand) == .released
+        phase(hand) == .satisfied
     }
 
     // MARK: - Lifecycle
@@ -109,21 +105,22 @@ public final class LessonEngine {
 
     /// Feed one MIDI event in; receive zero or more results to render.
     ///
-    /// Both note-on and note-off events are first-class. A typical
-    /// step produces (across both hands) results in this order:
+    /// Only note-on events drive advancement. A typical step produces:
     ///
-    ///     .correct(left,  i)   // LH note-on, hand: pending -> pressed
-    ///     .correct(right, i)   // RH note-on, hand: pending -> pressed
-    ///     .released(left,  i)  // LH note-off, hand: pressed -> released
-    ///     .released(right, i)  // RH note-off, hand: pressed -> released
+    ///     .correct(left,  i)   // LH note-on matches expected
+    ///     .correct(right, i)   // RH note-on matches expected
     ///     .advanced(toStepIndex: i+1)
     ///
-    /// (Hands can interleave; order of LH/RH doesn't matter.)
+    /// Note-off events are silently ignored by the engine; stale-note
+    /// precision tracking is done by the coordinator using `heldNotes`.
     public func process(_ event: NoteEvent) -> [StepResult] {
         guard let lesson else { return [.lessonNotStarted] }
 
         // Already finished — silently ignore further input.
         guard currentStepIndex < lesson.steps.count else { return [] }
+
+        // Note-offs are not used for advancement.
+        guard event.isOn, event.velocity > 0 else { return [] }
 
         let step = lesson.steps[currentStepIndex]
         let hand = attributeHand(for: event, at: step)
@@ -133,11 +130,7 @@ public final class LessonEngine {
             return [.handNotRequired(hand: hand, stepIndex: currentStepIndex)]
         }
 
-        if event.isOn, event.velocity > 0 {
-            return processNoteOn(event: event, hand: hand, step: step)
-        } else {
-            return processNoteOff(event: event, hand: hand)
-        }
+        return processNoteOn(event: event, hand: hand, step: step)
     }
 
     // MARK: - Note-on
@@ -160,59 +153,27 @@ public final class LessonEngine {
                     )
                 ]
             }
-            phase[hand] = .pressed(note: event.note)
-            return [.correct(hand: hand, stepIndex: currentStepIndex)]
-
-        case .pressed, .released:
-            // If the played note matches the *next* step's expected note
-            // for this hand, acknowledge it as a legato pre-press so the
-            // coordinator can synthesise a note-on once the engine advances.
-            // Otherwise it is a spurious duplicate.
-            if let lesson,
-               currentStepIndex + 1 < lesson.steps.count,
-               lesson.steps[currentStepIndex + 1].expectedNote(for: hand) == event.note {
-                return [.legatoPrepress(hand: hand, stepIndex: currentStepIndex)]
-            }
-            return [.alreadySatisfied(hand: hand, stepIndex: currentStepIndex)]
-        }
-    }
-
-    // MARK: - Note-off
-
-    private func processNoteOff(
-        event: NoteEvent,
-        hand: HandSide
-    ) -> [StepResult] {
-        switch phase(hand) {
-        case .pressed(let heldNote) where heldNote == event.note:
-            phase[hand] = .released
-            var results: [StepResult] = [
-                .released(hand: hand, stepIndex: currentStepIndex)
-            ]
+            phase[hand] = .satisfied
+            var results: [StepResult] = [.correct(hand: hand, stepIndex: currentStepIndex)]
             if shouldAdvance() {
                 advance(into: &results)
             }
             return results
 
-        case .pending, .pressed, .released:
-            // Note-off without a matching pending press — could be
-            // the previous step's chord being released after we
-            // advanced (this is the user's reported scenario), or
-            // some other stray release. Either way: silently ignore;
-            // do NOT emit wrongNote for releases.
+        case .satisfied:
+            // Hand already satisfied this step; duplicate note-on ignored.
             return []
         }
     }
 
     // MARK: - Advancement
 
-    /// True iff every hand the current step requires has reached
-    /// `.released`. Single-hand steps advance as soon as that one
-    /// hand's press-release cycle completes.
+    /// True iff every required hand for the current step has played
+    /// its correct note-on (is `.satisfied`).
     private func shouldAdvance() -> Bool {
         guard let step = currentStep else { return false }
-        let leftDone  = !step.requires(.left)  || phase(.left)  == .released
-        let rightDone = !step.requires(.right) || phase(.right) == .released
+        let leftDone  = !step.requires(.left)  || phase(.left)  == .satisfied
+        let rightDone = !step.requires(.right) || phase(.right) == .satisfied
         return leftDone && rightDone
     }
 
@@ -230,55 +191,21 @@ public final class LessonEngine {
 
     /// Decide which hand the engine should attribute `event` to.
     ///
-    /// Two-octave hands-together major scales overlap in MIDI range
-    /// (e.g. C major: LH plays 48..72, RH plays 60..84 — they share
-    /// 60..72), so a fixed split-point cannot tell them apart in the
-    /// upper half of the lesson. We resolve this by giving precedence
-    /// to the lesson context:
+    /// Two-octave hands-together scales can overlap in MIDI range, so
+    /// a fixed split-point is not reliable in the upper register. We
+    /// give precedence to the lesson context:
     ///
-    /// 1. **Note-off**: attribute to whichever hand is currently
-    ///    holding (`.pressed`) that exact MIDI note.
-    /// 2. **Note-on**: if the played note matches an unsatisfied
-    ///    hand's expected note for the current step, attribute to
-    ///    that hand. Covers the common case of correct play.
-    /// 3. Otherwise fall back to the static `handAttribution` split
-    ///    point. This covers duplicates and wrong notes that don't
-    ///    match either hand — in both cases we just need a sensible
-    ///    label for feedback.
+    /// 1. If the note matches the current step's expected note for a
+    ///    pending hand, attribute to that hand.
+    /// 2. Otherwise fall back to the static `handAttribution` split
+    ///    point for wrong notes and duplicates.
     private func attributeHand(for event: NoteEvent, at step: ScaleStep) -> HandSide {
-        if !event.isOn {
-            if case .pressed(let n) = phase(.left), n == event.note {
-                return .left
-            }
-            if case .pressed(let n) = phase(.right), n == event.note {
-                return .right
-            }
-            return handAttribution.hand(for: event.note)
-        }
-
         // Primary: note matches the current step's expected note for a pending hand.
         if step.leftNote == event.note, phase(.left) == .pending {
             return .left
         }
         if step.rightNote == event.note, phase(.right) == .pending {
             return .right
-        }
-
-        // Secondary: note matches the *next* step's expected note for a non-pending hand.
-        // This handles legato pre-presses where the player has already pressed (or
-        // released) the current step's note and is pressing ahead into the next step.
-        // Without this check, notes in the upper register (≥ split point) that belong
-        // to the LH get routed to the RH by the fallback, producing spurious
-        // alreadySatisfied results instead of the correct legatoPrepress.
-        if let lesson,
-           currentStepIndex + 1 < lesson.steps.count {
-            let next = lesson.steps[currentStepIndex + 1]
-            if next.leftNote == event.note, phase(.left) != .pending {
-                return .left
-            }
-            if next.rightNote == event.note, phase(.right) != .pending {
-                return .right
-            }
         }
 
         return handAttribution.hand(for: event.note)
