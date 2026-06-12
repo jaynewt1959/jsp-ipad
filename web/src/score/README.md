@@ -1,10 +1,11 @@
 # `web/src/score/` — sheet-music data model
 
 This directory holds the score model used by `ScaleScoreView`.
-VexFlow has been removed; the score is now a static PNG image
-(`web/public/score-cmajor.png`) with an SVG highlight overlay
-driven by the lesson snapshot.  The files here are kept for
-`buildScoreModel` (lesson-identity check) and `midiToPitch`.
+VexFlow has been removed; the score is now a static PNG image per
+scale (`web/public/scores/<type>/<key>.png`, resolved via
+`getScaleDescriptor`) with an SVG highlight overlay driven by the
+lesson snapshot.  The files here are kept for `buildScoreModel`
+(lesson-identity check) and `midiToPitch`.
 
 ## Files
 

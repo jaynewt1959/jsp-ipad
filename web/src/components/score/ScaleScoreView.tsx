@@ -1,7 +1,8 @@
 // ScaleScoreView — static-image score with live SVG highlight overlay.
 //
-// The background is the pre-rendered score image served from
-//   web/public/score-cmajor.png
+// The background is the pre-rendered score image for the active scale,
+// served from web/public/scores/<type>/<key>.png and resolved via
+// getScaleDescriptor(snapshot.lesson.key).
 // An SVG with viewBox="0 0 VB_W VB_H" + preserveAspectRatio="none" sits
 // on top so every coordinate in this file maps directly to a pixel in
 // the image's natural coordinate space.  The whole thing scales to fit
