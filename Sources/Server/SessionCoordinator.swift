@@ -126,6 +126,11 @@ actor SessionCoordinator {
 
     // MARK: - External commands
 
+    /// Feedback shown when Connect MIDI is pressed with no device
+    /// plugged in. Cleared automatically when a source appears.
+    private static let noDeviceFeedback =
+        "No MIDI device detected — plug in a keyboard, or tap the keys on screen"
+
     /// Start CoreMIDI and (re)start the lesson. Idempotent w.r.t. the
     /// MIDI side; rewinds the lesson regardless — connecting MIDI
     /// always begins a fresh practice session.
@@ -142,12 +147,26 @@ actor SessionCoordinator {
         heldNotes.removeAll()
         rewindLesson()
         reconcileActiveSource()
+        // Connecting with nothing plugged in otherwise looks like a
+        // no-op — tell the user. Covers both "CoreMIDI started with
+        // zero sources" and "client creation failed" (observed as
+        // MIDIClientCreateWithBlock error -2 on device when no MIDI
+        // hardware is attached): either way the source list is empty.
+        // Tapping Connect again retries — midi.start() is idempotent
+        // and re-attempts client creation after a failure.
+        if midi.currentSourceNames().isEmpty {
+            feedback = Self.noDeviceFeedback
+        }
         await broadcast()
     }
 
     /// CoreMIDI sources appeared or disappeared (hot-plug).
     func handleSourcesChanged() async {
         reconcileActiveSource()
+        // A keyboard arrived after a no-device Connect — retire the notice.
+        if feedback == Self.noDeviceFeedback, !midi.currentSourceNames().isEmpty {
+            feedback = ""
+        }
         await broadcast()
     }
 

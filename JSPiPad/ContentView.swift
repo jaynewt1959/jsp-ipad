@@ -124,6 +124,13 @@ struct WebViewContainer: UIViewRepresentable {
     func makeUIView(context: Context) -> WKWebView {
         let config = WKWebViewConfiguration()
         config.websiteDataStore = WKWebsiteDataStore.default()
+        // Let Web Audio start without a tap-time gesture unlock. The
+        // tap synth and metronome pre-warm their AudioContexts at page
+        // load; without this, the first on-screen key press paid the
+        // whole audio spin-up cost inside the pointer event — a
+        // main-thread hitch and a swallowed/garbled first note.
+        config.allowsInlineMediaPlayback = true
+        config.mediaTypesRequiringUserActionForPlayback = []
         let webView = WKWebView(frame: .zero, configuration: config)
         webView.backgroundColor = .black
         webView.isOpaque = false

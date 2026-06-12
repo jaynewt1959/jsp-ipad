@@ -79,7 +79,9 @@ grand-staff score with per-note fingerings and a live highlight overlay.
   Connecting AND disconnecting both implicitly reset the practice session
   (`handleStart`/`handleStopMidi` rewind) — required so demo-mode taps resume
   after a disconnect even when the previous run had completed (completed
-  lessons ignore all input until a rewind).
+  lessons ignore all input until a rewind). Connecting with no device plugged
+  in shows "No MIDI device detected …" in the feedback line (cleared when a
+  source appears via hot-plug).
 - **Practice Style** — Free or ♪ Timed.
 - **Tempo (BPM)** — 60 / 80 / 100 / 120 presets; active only in Timed.
 - **Practice Mode** — Left Hand / Right Hand / Both Hands.
@@ -124,8 +126,16 @@ mistakes. Both Hands steps are played with two sequential taps (engine handles
 anchors the run clock server-side via `rewindLesson()`. `KeyboardBar` shows
 "No keyboard connected — tap the keys on screen to practice" while active.
 Gating logic lives in `web/src/util/demoMode.ts` (`tapsEnabled`), mirrored by
-the server guard. **Ships in Release** — this is the App Review path
-(Guideline 2.1); do NOT put it behind `__DEV_TOOLS__`.
+the server guard. Taps sound a synthesized piano-ish tone pitched at the
+tapped key (`web/src/audio/tapSynth.ts` — hold-aware envelope, ~1.5 s decay
+cap, quick release on lift; separate AudioContext from the metronome's).
+The audio pipeline is pre-warmed at app load (`warmUpTapSynth()` from App
+mount) and depends on `ContentView.swift` setting the WKWebView's
+`mediaTypesRequiringUserActionForPlayback = []` — do not remove either, or
+the first tap goes silent (suspended-clock race).
+Every tap sounds, wrong notes included; audio is tap-only since physical
+keyboards make their own sound. **Ships in Release** — this is the App
+Review path (Guideline 2.1); do NOT put it behind `__DEV_TOOLS__`.
 
 **Analyze button**: sends `requestDebugLog` to the server. Disabled when MIDI is not
 running. **Dev builds only** — compiled out of Release via `__DEV_TOOLS__` (see

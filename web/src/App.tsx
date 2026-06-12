@@ -14,6 +14,7 @@ import {
   rangeFromKeyboard, availableKeyLabels, modeHasAnyKey, allKeysAvailable,
 } from "./util/availability";
 import { tapsEnabled } from "./util/demoMode";
+import { warmUpTapSynth } from "./audio/tapSynth";
 import type { HandMode } from "./types";
 import { Sidebar } from "./components/Sidebar";
 import { PracticePanel } from "./components/PracticePanel";
@@ -21,6 +22,10 @@ import { DebugPanel } from "./components/DebugPanel";
 
 export default function App() {
   const { snapshot, status, send: sessionSend, debugLog, clearDebugLog } = useSession();
+
+  // Pre-warm the tap-synth audio pipeline so the first on-screen key
+  // press sounds immediately (see tapSynth.ts).
+  useEffect(() => { warmUpTapSynth(); }, []);
 
   // ── Toast notification ─────────────────────────────────────────────────
   const [toast, setToast] = useState<string | null>(null);

@@ -6,6 +6,7 @@ import { getScaleDescriptor } from "../data/scales";
 import { noteName, FLAT_KEY_SIGNATURES } from "../util/noteName";
 import { compositeScore } from "../util/compositeScore";
 import { tapsEnabled } from "../util/demoMode";
+import { tapNoteOn, tapNoteOff } from "../audio/tapSynth";
 import { HandStatusBadge } from "./HandStatusBadge";
 import { KeyboardStrip } from "./KeyboardStrip";
 import { KeyboardBar } from "./KeyboardBar";
@@ -221,7 +222,14 @@ export function PracticePanel({ snapshot, send, timing, timingStats, playMode, l
           fingerLeft={showLeft  ? (step?.leftFinger  ?? null) : null}
           fingerRight={showRight ? (step?.rightFinger ?? null) : null}
           tappable={tapInput}
-          onKey={(midi, isOn) => send({ type: "simulateNote", note: midi, isOn })}
+          onKey={(midi, isOn) => {
+            // Audible feedback for every tap (wrong notes included),
+            // like a real piano. Tap-only — physical keyboards make
+            // their own sound.
+            if (isOn) tapNoteOn(midi);
+            else tapNoteOff(midi);
+            send({ type: "simulateNote", note: midi, isOn });
+          }}
         />
       </section>
 
