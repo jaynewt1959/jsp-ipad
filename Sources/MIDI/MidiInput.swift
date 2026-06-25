@@ -56,6 +56,11 @@ public final class MidiInput: @unchecked Sendable {
     private var sourcesChangedHandler: (@Sendable () -> Void)?
     private var running: Bool = false
     private var lastError: String?
+    /// Host-time (`mach_absolute_time`) boundary set by `flushPending()`.
+    /// Events whose receive timestamp is earlier than this are dropped
+    /// in `emit(_:from:)`, so a freshly-connected session never replays
+    /// keys the user pressed before tapping Connect MIDI.
+    private var acceptFromHostTime: UInt64 = 0
 
     public init() {}
 
@@ -190,6 +195,21 @@ public final class MidiInput: @unchecked Sendable {
         #endif
     }
 
+    /// Discard MIDI received before "now" so connecting doesn't replay
+    /// keys the user pressed (or held) beforehand. Records a host-time
+    /// boundary; `emit(_:from:)` drops events stamped earlier than it.
+    /// Must be called before the event stream begins consuming so the
+    /// boundary is in force before any event can be buffered. Safe to
+    /// call from any thread; idempotent.
+    public func flushPending() {
+        #if canImport(CoreMIDI)
+        let now = mach_absolute_time()
+        lock.lock()
+        acceptFromHostTime = now
+        lock.unlock()
+        #endif
+    }
+
     // MARK: - CoreMIDI plumbing
 
     #if canImport(CoreMIDI)
@@ -293,6 +313,13 @@ public final class MidiInput: @unchecked Sendable {
     private func emit(_ event: NoteEvent, from sourceName: String) {
         let cont: AsyncStream<SourcedNoteEvent>.Continuation? = {
             lock.lock(); defer { lock.unlock() }
+            // Drop events that predate the most recent flush — e.g. keys
+            // pressed/held before Connect MIDI. `timestampNs` is the
+            // CoreMIDI host-time receive stamp (same clock as
+            // `flushPending()`); 0 means "immediate", so it is kept.
+            if event.timestampNs != 0 && event.timestampNs < acceptFromHostTime {
+                return nil
+            }
             return continuation
         }()
         cont?.yield(SourcedNoteEvent(event: event, sourceName: sourceName))

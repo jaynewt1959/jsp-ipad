@@ -168,6 +168,12 @@ actor SessionCoordinator {
             Task { await self.handleSourcesChanged() }
         }
         midi.start()
+        // Drop any MIDI buffered before this moment so keys the user
+        // pressed (or held) before tapping Connect don't replay into the
+        // freshly-rewound lesson and make the UI auto-advance as if
+        // practice had already begun. Must run before we begin consuming
+        // so the host-time boundary is in force before any event buffers.
+        midi.flushPending()
         beginConsumingMidiIfNeeded()
         // The input device is changing: stale holds (e.g. an on-screen
         // tap mid-press) can never deliver their note-off through the

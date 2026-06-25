@@ -81,7 +81,10 @@ grand-staff score with per-note fingerings and a live highlight overlay.
   after a disconnect even when the previous run had completed (completed
   lessons ignore all input until a rewind). Connecting with no device plugged
   in shows "No MIDI device detected …" in the feedback line (cleared when a
-  source appears via hot-plug).
+  source appears via hot-plug). Connecting also calls `MidiInput.flushPending()`
+  (between `midi.start()` and consuming) which records a `mach_absolute_time`
+  boundary; `emit` drops any event stamped earlier, so keys pressed/held before
+  Connect don't replay into the fresh lesson and auto-advance it.
 - **Practice Style** — Free or ♪ Timed.
 - **Tempo (BPM)** — 60 / 80 / 100 / 120 presets; active only in Timed.
 - **Practice Mode** — Left Hand / Right Hand / Both Hands.
